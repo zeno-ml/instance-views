@@ -1,6 +1,7 @@
 <script lang="ts">
   // List of objects with keys corresponding to the following props.
-  export let table;
+  export let entry;
+  export let options;
   // Key for model outputs.
   export let modelColumn;
   // Key for groundtruth labels.
@@ -13,29 +14,20 @@
   export let idColumn;
 </script>
 
-<div id="container">
-  {#each table as row}
-    <div class="box">
-      <span>{row[dataColumn]}</span>
-      <br />
-      <span class="label">label: </span><span class="value">
-        {row[labelColumn]}
-      </span>
-      {#if modelColumn && row[modelColumn] !== undefined}
-        <br />
-        <span class="label">output: </span>
-        <span class="value">{row[modelColumn]} </span>
-      {/if}
-    </div>
-  {/each}
+<div class="box">
+  <span>{entry[dataColumn]}</span>
+  <br />
+  <span class="label">label: </span><span class="value">
+    {entry[labelColumn]}
+  </span>
+  {#if modelColumn && entry[modelColumn] !== undefined}
+    <br />
+    <span class="label">output: </span>
+    <span class="value">{entry[modelColumn]} </span>
+  {/if}
 </div>
 
 <style>
-  #container {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-  }
   .label {
     font-size: 12px;
     color: rgba(0, 0, 0, 0.5);

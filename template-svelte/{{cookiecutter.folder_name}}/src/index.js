@@ -1,25 +1,36 @@
-import Component from "./Component.svelte";
+import InstanceView from "./InstanceView.svelte";
+import OptionsView from "./OptionsView.svelte";
 
-export default function getView(
-  table,
+export function getInstance(
+  div,
+  viewOptions,
+  entry,
   modelColumn,
   labelColumn,
   dataColumn,
   transformColumn,
   idColumn
 ) {
-  let div = document.createElement("div");
-
-  const app = new Component({
+  new InstanceView({
     target: div,
     props: {
-      table: table,
+      entry: entry,
+      viewOptions: viewOptions,
       modelColumn: modelColumn,
       labelColumn: labelColumn,
       dataColumn: dataColumn,
       transformColumn: transformColumn,
       idColumn: idColumn,
     },
+    hydrate: true,
   });
-  return div;
 }
+
+// export function getOptions(div, setOptions) {
+//   new OptionsView({
+//     target: div,
+//     props: {
+//       setOptions,
+//     },
+//   });
+// }

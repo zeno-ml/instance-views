@@ -109,6 +109,108 @@ function set_store_value(store, ret, value) {
 function action_destroyer(action_result) {
     return action_result && is_function(action_result.destroy) ? action_result.destroy : noop;
 }
+
+// Track which nodes are claimed during hydration. Unclaimed nodes can then be removed from the DOM
+// at the end of hydration without touching the remaining nodes.
+let is_hydrating = false;
+function start_hydrating() {
+    is_hydrating = true;
+}
+function end_hydrating() {
+    is_hydrating = false;
+}
+function upper_bound(low, high, key, value) {
+    // Return first index of value larger than input value in the range [low, high)
+    while (low < high) {
+        const mid = low + ((high - low) >> 1);
+        if (key(mid) <= value) {
+            low = mid + 1;
+        }
+        else {
+            high = mid;
+        }
+    }
+    return low;
+}
+function init_hydrate(target) {
+    if (target.hydrate_init)
+        return;
+    target.hydrate_init = true;
+    // We know that all children have claim_order values since the unclaimed have been detached if target is not <head>
+    let children = target.childNodes;
+    // If target is <head>, there may be children without claim_order
+    if (target.nodeName === 'HEAD') {
+        const myChildren = [];
+        for (let i = 0; i < children.length; i++) {
+            const node = children[i];
+            if (node.claim_order !== undefined) {
+                myChildren.push(node);
+            }
+        }
+        children = myChildren;
+    }
+    /*
+    * Reorder claimed children optimally.
+    * We can reorder claimed children optimally by finding the longest subsequence of
+    * nodes that are already claimed in order and only moving the rest. The longest
+    * subsequence subsequence of nodes that are claimed in order can be found by
+    * computing the longest increasing subsequence of .claim_order values.
+    *
+    * This algorithm is optimal in generating the least amount of reorder operations
+    * possible.
+    *
+    * Proof:
+    * We know that, given a set of reordering operations, the nodes that do not move
+    * always form an increasing subsequence, since they do not move among each other
+    * meaning that they must be already ordered among each other. Thus, the maximal
+    * set of nodes that do not move form a longest increasing subsequence.
+    */
+    // Compute longest increasing subsequence
+    // m: subsequence length j => index k of smallest value that ends an increasing subsequence of length j
+    const m = new Int32Array(children.length + 1);
+    // Predecessor indices + 1
+    const p = new Int32Array(children.length);
+    m[0] = -1;
+    let longest = 0;
+    for (let i = 0; i < children.length; i++) {
+        const current = children[i].claim_order;
+        // Find the largest subsequence length such that it ends in a value less than our current value
+        // upper_bound returns first greater value, so we subtract one
+        // with fast path for when we are on the current longest subsequence
+        const seqLen = ((longest > 0 && children[m[longest]].claim_order <= current) ? longest + 1 : upper_bound(1, longest, idx => children[m[idx]].claim_order, current)) - 1;
+        p[i] = m[seqLen] + 1;
+        const newLen = seqLen + 1;
+        // We can guarantee that current is the smallest value. Otherwise, we would have generated a longer sequence.
+        m[newLen] = i;
+        longest = Math.max(newLen, longest);
+    }
+    // The longest increasing subsequence of nodes (initially reversed)
+    const lis = [];
+    // The rest of the nodes, nodes that will be moved
+    const toMove = [];
+    let last = children.length - 1;
+    for (let cur = m[longest] + 1; cur != 0; cur = p[cur - 1]) {
+        lis.push(children[cur - 1]);
+        for (; last >= cur; last--) {
+            toMove.push(children[last]);
+        }
+        last--;
+    }
+    for (; last >= 0; last--) {
+        toMove.push(children[last]);
+    }
+    lis.reverse();
+    // We sort the nodes being moved to guarantee that their insertion order matches the claim order
+    toMove.sort((a, b) => a.claim_order - b.claim_order);
+    // Finally, we move the nodes
+    for (let i = 0, j = 0; i < toMove.length; i++) {
+        while (j < lis.length && toMove[i].claim_order >= lis[j].claim_order) {
+            j++;
+        }
+        const anchor = j < lis.length ? lis[j] : null;
+        target.insertBefore(toMove[i], anchor);
+    }
+}
 function append(target, node) {
     target.appendChild(node);
 }
@@ -133,17 +235,40 @@ function get_root_for_style(node) {
 function append_stylesheet(node, style) {
     append(node.head || node, style);
 }
-function insert(target, node, anchor) {
-    target.insertBefore(node, anchor || null);
+function append_hydration(target, node) {
+    if (is_hydrating) {
+        init_hydrate(target);
+        if ((target.actual_end_child === undefined) || ((target.actual_end_child !== null) && (target.actual_end_child.parentElement !== target))) {
+            target.actual_end_child = target.firstChild;
+        }
+        // Skip nodes of undefined ordering
+        while ((target.actual_end_child !== null) && (target.actual_end_child.claim_order === undefined)) {
+            target.actual_end_child = target.actual_end_child.nextSibling;
+        }
+        if (node !== target.actual_end_child) {
+            // We only insert if the ordering of this node should be modified or the parent node is not target
+            if (node.claim_order !== undefined || node.parentNode !== target) {
+                target.insertBefore(node, target.actual_end_child);
+            }
+        }
+        else {
+            target.actual_end_child = node.nextSibling;
+        }
+    }
+    else if (node.parentNode !== target || node.nextSibling !== null) {
+        target.appendChild(node);
+    }
+}
+function insert_hydration(target, node, anchor) {
+    if (is_hydrating && !anchor) {
+        append_hydration(target, node);
+    }
+    else if (node.parentNode !== target || node.nextSibling != anchor) {
+        target.insertBefore(node, anchor || null);
+    }
 }
 function detach(node) {
     node.parentNode.removeChild(node);
-}
-function destroy_each(iterations, detaching) {
-    for (let i = 0; i < iterations.length; i += 1) {
-        if (iterations[i])
-            iterations[i].d(detaching);
-    }
 }
 function element(name) {
     return document.createElement(name);
@@ -204,6 +329,94 @@ function set_attributes(node, attributes) {
 }
 function children(element) {
     return Array.from(element.childNodes);
+}
+function init_claim_info(nodes) {
+    if (nodes.claim_info === undefined) {
+        nodes.claim_info = { last_index: 0, total_claimed: 0 };
+    }
+}
+function claim_node(nodes, predicate, processNode, createNode, dontUpdateLastIndex = false) {
+    // Try to find nodes in an order such that we lengthen the longest increasing subsequence
+    init_claim_info(nodes);
+    const resultNode = (() => {
+        // We first try to find an element after the previous one
+        for (let i = nodes.claim_info.last_index; i < nodes.length; i++) {
+            const node = nodes[i];
+            if (predicate(node)) {
+                const replacement = processNode(node);
+                if (replacement === undefined) {
+                    nodes.splice(i, 1);
+                }
+                else {
+                    nodes[i] = replacement;
+                }
+                if (!dontUpdateLastIndex) {
+                    nodes.claim_info.last_index = i;
+                }
+                return node;
+            }
+        }
+        // Otherwise, we try to find one before
+        // We iterate in reverse so that we don't go too far back
+        for (let i = nodes.claim_info.last_index - 1; i >= 0; i--) {
+            const node = nodes[i];
+            if (predicate(node)) {
+                const replacement = processNode(node);
+                if (replacement === undefined) {
+                    nodes.splice(i, 1);
+                }
+                else {
+                    nodes[i] = replacement;
+                }
+                if (!dontUpdateLastIndex) {
+                    nodes.claim_info.last_index = i;
+                }
+                else if (replacement === undefined) {
+                    // Since we spliced before the last_index, we decrease it
+                    nodes.claim_info.last_index--;
+                }
+                return node;
+            }
+        }
+        // If we can't find any matching node, we create a new one
+        return createNode();
+    })();
+    resultNode.claim_order = nodes.claim_info.total_claimed;
+    nodes.claim_info.total_claimed += 1;
+    return resultNode;
+}
+function claim_element_base(nodes, name, attributes, create_element) {
+    return claim_node(nodes, (node) => node.nodeName === name, (node) => {
+        const remove = [];
+        for (let j = 0; j < node.attributes.length; j++) {
+            const attribute = node.attributes[j];
+            if (!attributes[attribute.name]) {
+                remove.push(attribute.name);
+            }
+        }
+        remove.forEach(v => node.removeAttribute(v));
+        return undefined;
+    }, () => create_element(name));
+}
+function claim_element(nodes, name, attributes) {
+    return claim_element_base(nodes, name, attributes, element);
+}
+function claim_text(nodes, data) {
+    return claim_node(nodes, (node) => node.nodeType === 3, (node) => {
+        const dataStr = '' + data;
+        if (node.data.startsWith(dataStr)) {
+            if (node.data.length !== dataStr.length) {
+                return node.splitText(dataStr.length);
+            }
+        }
+        else {
+            node.data = dataStr;
+        }
+    }, () => text(data), true // Text nodes should not update last index since it is likely not worth it to eliminate an increasing subsequence of actual elements
+    );
+}
+function claim_space(nodes) {
+    return claim_text(nodes, ' ');
 }
 function set_data(text, data) {
     data = '' + data;
@@ -504,6 +717,9 @@ function bind(component, name, callback) {
 function create_component(block) {
     block && block.c();
 }
+function claim_component(block, parent_nodes) {
+    block && block.l(parent_nodes);
+}
 function mount_component(component, target, anchor, customElement) {
     const { fragment, on_mount, on_destroy, after_update } = component.$$;
     fragment && fragment.m(target, anchor);
@@ -588,6 +804,7 @@ function init(component, options, instance, create_fragment, not_equal, props, a
     $$.fragment = create_fragment ? create_fragment($$.ctx) : false;
     if (options.target) {
         if (options.hydrate) {
+            start_hydrating();
             const nodes = children(options.target);
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             $$.fragment && $$.fragment.l(nodes);
@@ -600,6 +817,7 @@ function init(component, options, instance, create_fragment, not_equal, props, a
         if (options.intro)
             transition_in(component.$$.fragment);
         mount_component(component, options.target, options.anchor, options.customElement);
+        end_hydrating();
         flush();
     }
     set_current_component(parent_component);
@@ -628,6 +846,251 @@ class SvelteComponent {
             this.$$.skip_bound = false;
         }
     }
+}
+
+/* src/InstanceView.svelte generated by Svelte v3.49.0 */
+
+function add_css(target) {
+	append_styles(target, "svelte-7tn94s", "#overlays.svelte-7tn94s{position:relative}.overlay.svelte-7tn94s{filter:invert(100%) opacity(40%);left:0px;position:absolute}.box.svelte-7tn94s{padding:10px;margin:10px;border:0.5px solid rgb(224, 224, 224)}");
+}
+
+// (25:4) {#if viewOptions["mask"].includes("Label")}
+function create_if_block_1$1(ctx) {
+	let img;
+	let img_src_value;
+	let img_alt_value;
+
+	return {
+		c() {
+			img = element("img");
+			this.h();
+		},
+		l(nodes) {
+			img = claim_element(nodes, "IMG", { class: true, src: true, alt: true });
+			this.h();
+		},
+		h() {
+			attr(img, "class", "overlay svelte-7tn94s");
+			if (!src_url_equal(img.src, img_src_value = "/labels/" + /*entry*/ ctx[0][/*labelColumn*/ ctx[3]])) attr(img, "src", img_src_value);
+			attr(img, "alt", img_alt_value = "Image thumbnail for instance " + /*entry*/ ctx[0][/*labelColumn*/ ctx[3]]);
+			set_style(img, "width", `150px`, false);
+			set_style(img, "height", `150px`, false);
+		},
+		m(target, anchor) {
+			insert_hydration(target, img, anchor);
+		},
+		p(ctx, dirty) {
+			if (dirty & /*entry, labelColumn*/ 9 && !src_url_equal(img.src, img_src_value = "/labels/" + /*entry*/ ctx[0][/*labelColumn*/ ctx[3]])) {
+				attr(img, "src", img_src_value);
+			}
+
+			if (dirty & /*entry, labelColumn*/ 9 && img_alt_value !== (img_alt_value = "Image thumbnail for instance " + /*entry*/ ctx[0][/*labelColumn*/ ctx[3]])) {
+				attr(img, "alt", img_alt_value);
+			}
+		},
+		d(detaching) {
+			if (detaching) detach(img);
+		}
+	};
+}
+
+// (34:4) {#if entry[modelColumn] && viewOptions["mask"].includes("Model")}
+function create_if_block$1(ctx) {
+	let img;
+	let img_src_value;
+	let img_alt_value;
+
+	return {
+		c() {
+			img = element("img");
+			this.h();
+		},
+		l(nodes) {
+			img = claim_element(nodes, "IMG", { class: true, src: true, alt: true });
+			this.h();
+		},
+		h() {
+			attr(img, "class", "overlay svelte-7tn94s");
+			if (!src_url_equal(img.src, img_src_value = "/cache/" + /*modelColumn*/ ctx[2] + "/" + /*entry*/ ctx[0][/*modelColumn*/ ctx[2]])) attr(img, "src", img_src_value);
+			attr(img, "alt", img_alt_value = "Image thumbnail for instance " + /*entry*/ ctx[0][/*modelColumn*/ ctx[2]]);
+			set_style(img, "width", `150px`, false);
+			set_style(img, "height", `150px`, false);
+		},
+		m(target, anchor) {
+			insert_hydration(target, img, anchor);
+		},
+		p(ctx, dirty) {
+			if (dirty & /*modelColumn, entry*/ 5 && !src_url_equal(img.src, img_src_value = "/cache/" + /*modelColumn*/ ctx[2] + "/" + /*entry*/ ctx[0][/*modelColumn*/ ctx[2]])) {
+				attr(img, "src", img_src_value);
+			}
+
+			if (dirty & /*entry, modelColumn*/ 5 && img_alt_value !== (img_alt_value = "Image thumbnail for instance " + /*entry*/ ctx[0][/*modelColumn*/ ctx[2]])) {
+				attr(img, "alt", img_alt_value);
+			}
+		},
+		d(detaching) {
+			if (detaching) detach(img);
+		}
+	};
+}
+
+function create_fragment$6(ctx) {
+	let div1;
+	let div0;
+	let img;
+	let img_src_value;
+	let img_alt_value;
+	let t0;
+	let show_if_1 = /*viewOptions*/ ctx[1]["mask"].includes("Label");
+	let t1;
+	let show_if = /*entry*/ ctx[0][/*modelColumn*/ ctx[2]] && /*viewOptions*/ ctx[1]["mask"].includes("Model");
+	let if_block0 = show_if_1 && create_if_block_1$1(ctx);
+	let if_block1 = show_if && create_if_block$1(ctx);
+
+	return {
+		c() {
+			div1 = element("div");
+			div0 = element("div");
+			img = element("img");
+			t0 = space();
+			if (if_block0) if_block0.c();
+			t1 = space();
+			if (if_block1) if_block1.c();
+			this.h();
+		},
+		l(nodes) {
+			div1 = claim_element(nodes, "DIV", { class: true });
+			var div1_nodes = children(div1);
+			div0 = claim_element(div1_nodes, "DIV", { id: true, class: true });
+			var div0_nodes = children(div0);
+			img = claim_element(div0_nodes, "IMG", { src: true, alt: true });
+			t0 = claim_space(div0_nodes);
+			if (if_block0) if_block0.l(div0_nodes);
+			t1 = claim_space(div0_nodes);
+			if (if_block1) if_block1.l(div0_nodes);
+			div0_nodes.forEach(detach);
+			div1_nodes.forEach(detach);
+			this.h();
+		},
+		h() {
+			if (!src_url_equal(img.src, img_src_value = "/data/" + /*entry*/ ctx[0][/*idColumn*/ ctx[4]])) attr(img, "src", img_src_value);
+			attr(img, "alt", img_alt_value = "Image thumbnail for instance " + /*entry*/ ctx[0][/*idColumn*/ ctx[4]]);
+			set_style(img, "width", `150px`, false);
+			set_style(img, "height", `150px`, false);
+			attr(div0, "id", "overlays");
+			attr(div0, "class", "svelte-7tn94s");
+			attr(div1, "class", "box svelte-7tn94s");
+		},
+		m(target, anchor) {
+			insert_hydration(target, div1, anchor);
+			append_hydration(div1, div0);
+			append_hydration(div0, img);
+			append_hydration(div0, t0);
+			if (if_block0) if_block0.m(div0, null);
+			append_hydration(div0, t1);
+			if (if_block1) if_block1.m(div0, null);
+		},
+		p(ctx, [dirty]) {
+			if (dirty & /*entry, idColumn*/ 17 && !src_url_equal(img.src, img_src_value = "/data/" + /*entry*/ ctx[0][/*idColumn*/ ctx[4]])) {
+				attr(img, "src", img_src_value);
+			}
+
+			if (dirty & /*entry, idColumn*/ 17 && img_alt_value !== (img_alt_value = "Image thumbnail for instance " + /*entry*/ ctx[0][/*idColumn*/ ctx[4]])) {
+				attr(img, "alt", img_alt_value);
+			}
+
+			if (dirty & /*viewOptions*/ 2) show_if_1 = /*viewOptions*/ ctx[1]["mask"].includes("Label");
+
+			if (show_if_1) {
+				if (if_block0) {
+					if_block0.p(ctx, dirty);
+				} else {
+					if_block0 = create_if_block_1$1(ctx);
+					if_block0.c();
+					if_block0.m(div0, t1);
+				}
+			} else if (if_block0) {
+				if_block0.d(1);
+				if_block0 = null;
+			}
+
+			if (dirty & /*entry, modelColumn, viewOptions*/ 7) show_if = /*entry*/ ctx[0][/*modelColumn*/ ctx[2]] && /*viewOptions*/ ctx[1]["mask"].includes("Model");
+
+			if (show_if) {
+				if (if_block1) {
+					if_block1.p(ctx, dirty);
+				} else {
+					if_block1 = create_if_block$1(ctx);
+					if_block1.c();
+					if_block1.m(div0, null);
+				}
+			} else if (if_block1) {
+				if_block1.d(1);
+				if_block1 = null;
+			}
+		},
+		i: noop,
+		o: noop,
+		d(detaching) {
+			if (detaching) detach(div1);
+			if (if_block0) if_block0.d();
+			if (if_block1) if_block1.d();
+		}
+	};
+}
+
+function instance$4($$self, $$props, $$invalidate) {
+	let { entry } = $$props;
+	let { viewOptions } = $$props;
+	let { modelColumn } = $$props;
+	let { labelColumn } = $$props;
+	let { dataColumn } = $$props;
+	let { transformColumn } = $$props;
+	let { idColumn } = $$props;
+
+	$$self.$$set = $$props => {
+		if ('entry' in $$props) $$invalidate(0, entry = $$props.entry);
+		if ('viewOptions' in $$props) $$invalidate(1, viewOptions = $$props.viewOptions);
+		if ('modelColumn' in $$props) $$invalidate(2, modelColumn = $$props.modelColumn);
+		if ('labelColumn' in $$props) $$invalidate(3, labelColumn = $$props.labelColumn);
+		if ('dataColumn' in $$props) $$invalidate(5, dataColumn = $$props.dataColumn);
+		if ('transformColumn' in $$props) $$invalidate(6, transformColumn = $$props.transformColumn);
+		if ('idColumn' in $$props) $$invalidate(4, idColumn = $$props.idColumn);
+	};
+
+	return [
+		entry,
+		viewOptions,
+		modelColumn,
+		labelColumn,
+		idColumn,
+		dataColumn,
+		transformColumn
+	];
+}
+
+class InstanceView extends SvelteComponent {
+	constructor(options) {
+		super();
+
+		init(
+			this,
+			options,
+			instance$4,
+			create_fragment$6,
+			safe_not_equal,
+			{
+				entry: 0,
+				viewOptions: 1,
+				modelColumn: 2,
+				labelColumn: 3,
+				dataColumn: 5,
+				transformColumn: 6,
+				idColumn: 4
+			},
+			add_css
+		);
+	}
 }
 
 /******************************************************************************
@@ -1207,10 +1670,20 @@ function create_fragment$5(ctx) {
 		c() {
 			span = element("span");
 			if (default_slot) default_slot.c();
+			this.h();
+		},
+		l(nodes) {
+			span = claim_element(nodes, "SPAN", {});
+			var span_nodes = children(span);
+			if (default_slot) default_slot.l(span_nodes);
+			span_nodes.forEach(detach);
+			this.h();
+		},
+		h() {
 			set_attributes(span, span_data);
 		},
 		m(target, anchor) {
-			insert(target, span, anchor);
+			insert_hydration(target, span, anchor);
 
 			if (default_slot) {
 				default_slot.m(span, null);
@@ -1326,6 +1799,9 @@ function create_default_slot$2(ctx) {
 		c() {
 			if (default_slot) default_slot.c();
 		},
+		l(nodes) {
+			if (default_slot) default_slot.l(nodes);
+		},
 		m(target, anchor) {
 			if (default_slot) {
 				default_slot.m(target, anchor);
@@ -1419,12 +1895,16 @@ function create_fragment$4(ctx) {
 			if (switch_instance) create_component(switch_instance.$$.fragment);
 			switch_instance_anchor = empty();
 		},
+		l(nodes) {
+			if (switch_instance) claim_component(switch_instance.$$.fragment, nodes);
+			switch_instance_anchor = empty();
+		},
 		m(target, anchor) {
 			if (switch_instance) {
 				mount_component(switch_instance, target, anchor);
 			}
 
-			insert(target, switch_instance_anchor, anchor);
+			insert_hydration(target, switch_instance_anchor, anchor);
 			current = true;
 		},
 		p(ctx, [dirty]) {
@@ -1577,6 +2057,9 @@ function create_fragment$3(ctx) {
 		c() {
 			if (default_slot) default_slot.c();
 		},
+		l(nodes) {
+			if (default_slot) default_slot.l(nodes);
+		},
 		m(target, anchor) {
 			if (default_slot) {
 				default_slot.m(target, anchor);
@@ -1654,7 +2137,7 @@ const Label = CommonLabel;
 
 /* node_modules/@smui/segmented-button/dist/SegmentedButton.svelte generated by Svelte v3.49.0 */
 
-function get_each_context$1(ctx, list, i) {
+function get_each_context(ctx, list, i) {
 	const child_ctx = ctx.slice();
 	child_ctx[30] = list[i];
 	child_ctx[32] = i;
@@ -1673,6 +2156,9 @@ function create_default_slot_1$1(ctx) {
 	return {
 		c() {
 			if (default_slot) default_slot.c();
+		},
+		l(nodes) {
+			if (default_slot) default_slot.l(nodes);
 		},
 		m(target, anchor) {
 			if (default_slot) {
@@ -1732,9 +2218,13 @@ function create_default_slot$1(ctx) {
 			create_component(contextfragment.$$.fragment);
 			t = space();
 		},
+		l(nodes) {
+			claim_component(contextfragment.$$.fragment, nodes);
+			t = claim_space(nodes);
+		},
 		m(target, anchor) {
 			mount_component(contextfragment, target, anchor);
-			insert(target, t, anchor);
+			insert_hydration(target, t, anchor);
 			current = true;
 		},
 		p(ctx, dirty) {
@@ -1764,7 +2254,7 @@ function create_default_slot$1(ctx) {
 }
 
 // (16:2) {#each segments as segment, i (key(segment))}
-function create_each_block$1(key_2, ctx) {
+function create_each_block(key_2, ctx) {
 	let first;
 	let contextfragment;
 	let current;
@@ -1784,10 +2274,18 @@ function create_each_block$1(key_2, ctx) {
 		c() {
 			first = empty();
 			create_component(contextfragment.$$.fragment);
+			this.h();
+		},
+		l(nodes) {
+			first = empty();
+			claim_component(contextfragment.$$.fragment, nodes);
+			this.h();
+		},
+		h() {
 			this.first = first;
 		},
 		m(target, anchor) {
-			insert(target, first, anchor);
+			insert_hydration(target, first, anchor);
 			mount_component(contextfragment, target, anchor);
 			current = true;
 		},
@@ -1832,9 +2330,9 @@ function create_fragment$2(ctx) {
 	const get_key = ctx => /*key*/ ctx[3](/*segment*/ ctx[30]);
 
 	for (let i = 0; i < each_value.length; i += 1) {
-		let child_ctx = get_each_context$1(ctx, each_value, i);
+		let child_ctx = get_each_context(ctx, each_value, i);
 		let key = get_key(child_ctx);
-		each_1_lookup.set(key, each_blocks[i] = create_each_block$1(key, child_ctx));
+		each_1_lookup.set(key, each_blocks[i] = create_each_block(key, child_ctx));
 	}
 
 	let div_levels = [
@@ -1865,10 +2363,24 @@ function create_fragment$2(ctx) {
 				each_blocks[i].c();
 			}
 
+			this.h();
+		},
+		l(nodes) {
+			div = claim_element(nodes, "DIV", { class: true, role: true });
+			var div_nodes = children(div);
+
+			for (let i = 0; i < each_blocks.length; i += 1) {
+				each_blocks[i].l(div_nodes);
+			}
+
+			div_nodes.forEach(detach);
+			this.h();
+		},
+		h() {
 			set_attributes(div, div_data);
 		},
 		m(target, anchor) {
-			insert(target, div, anchor);
+			insert_hydration(target, div, anchor);
 
 			for (let i = 0; i < each_blocks.length; i += 1) {
 				each_blocks[i].m(div, null);
@@ -1893,7 +2405,7 @@ function create_fragment$2(ctx) {
 			if (dirty[0] & /*segments, initialSelected, $$scope, key*/ 2097420) {
 				each_value = /*segments*/ ctx[2];
 				group_outros();
-				each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx, each_value, each_1_lookup, div, outro_and_destroy_block, create_each_block$1, null, get_each_context$1);
+				each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx, each_value, each_1_lookup, div, outro_and_destroy_block, create_each_block, null, get_each_context);
 				check_outros();
 			}
 
@@ -3596,16 +4108,24 @@ function Ripple(node, { ripple = true, surface = false, unbounded = false, disab
 
 /* node_modules/@smui/segmented-button/dist/Segment.svelte generated by Svelte v3.49.0 */
 
-function create_if_block_1$1(ctx) {
+function create_if_block_1(ctx) {
 	let div;
 
 	return {
 		c() {
 			div = element("div");
+			this.h();
+		},
+		l(nodes) {
+			div = claim_element(nodes, "DIV", { class: true });
+			children(div).forEach(detach);
+			this.h();
+		},
+		h() {
 			attr(div, "class", "mdc-segmented-button__ripple");
 		},
 		m(target, anchor) {
-			insert(target, div, anchor);
+			insert_hydration(target, div, anchor);
 		},
 		d(detaching) {
 			if (detaching) detach(div);
@@ -3614,16 +4134,24 @@ function create_if_block_1$1(ctx) {
 }
 
 // (34:4) {#if touch}
-function create_if_block$1(ctx) {
+function create_if_block(ctx) {
 	let div;
 
 	return {
 		c() {
 			div = element("div");
+			this.h();
+		},
+		l(nodes) {
+			div = claim_element(nodes, "DIV", { class: true });
+			children(div).forEach(detach);
+			this.h();
+		},
+		h() {
 			attr(div, "class", "mdc-segmented-button__segment__touch");
 		},
 		m(target, anchor) {
-			insert(target, div, anchor);
+			insert_hydration(target, div, anchor);
 		},
 		d(detaching) {
 			if (detaching) detach(div);
@@ -3644,10 +4172,10 @@ function create_fragment$1(ctx) {
 	let current;
 	let mounted;
 	let dispose;
-	let if_block0 = /*ripple*/ ctx[4] && create_if_block_1$1();
+	let if_block0 = /*ripple*/ ctx[4] && create_if_block_1();
 	const default_slot_template = /*#slots*/ ctx[23].default;
 	const default_slot = create_slot(default_slot_template, ctx, /*$$scope*/ ctx[22], null);
-	let if_block1 = /*touch*/ ctx[5] && create_if_block$1();
+	let if_block1 = /*touch*/ ctx[5] && create_if_block();
 
 	let button_levels = [
 		{
@@ -3692,12 +4220,32 @@ function create_fragment$1(ctx) {
 			if_block0_anchor = empty();
 			if (default_slot) default_slot.c();
 			if (if_block1) if_block1.c();
+			this.h();
+		},
+		l(nodes) {
+			button = claim_element(nodes, "BUTTON", {
+				class: true,
+				style: true,
+				role: true,
+				"aria-pressed": true,
+				"aria-checked": true
+			});
+
+			var button_nodes = children(button);
+			if (if_block0) if_block0.l(button_nodes);
+			if_block0_anchor = empty();
+			if (default_slot) default_slot.l(button_nodes);
+			if (if_block1) if_block1.l(button_nodes);
+			button_nodes.forEach(detach);
+			this.h();
+		},
+		h() {
 			set_attributes(button, button_data);
 		},
 		m(target, anchor) {
-			insert(target, button, anchor);
+			insert_hydration(target, button, anchor);
 			if (if_block0) if_block0.m(button, null);
-			append(button, if_block0_anchor);
+			append_hydration(button, if_block0_anchor);
 
 			if (default_slot) {
 				default_slot.m(button, null);
@@ -3728,7 +4276,7 @@ function create_fragment$1(ctx) {
 		p(ctx, dirty) {
 			if (/*ripple*/ ctx[4]) {
 				if (if_block0) ; else {
-					if_block0 = create_if_block_1$1();
+					if_block0 = create_if_block_1();
 					if_block0.c();
 					if_block0.m(button, if_block0_anchor);
 				}
@@ -3754,7 +4302,7 @@ function create_fragment$1(ctx) {
 
 			if (/*touch*/ ctx[5]) {
 				if (if_block1) ; else {
-					if_block1 = create_if_block$1();
+					if_block1 = create_if_block();
 					if_block1.c();
 					if_block1.m(button, null);
 				}
@@ -4055,32 +4603,24 @@ class Segment$1 extends SvelteComponent {
 
 const Segment = Segment$1;
 
-/* src/Component.svelte generated by Svelte v3.49.0 */
+/* src/OptionsView.svelte generated by Svelte v3.49.0 */
 
-function add_css(target) {
-	append_styles(target, "svelte-1le7aij", "#container.svelte-1le7aij{display:flex;flex-direction:row;flex-wrap:wrap}#overlays.svelte-1le7aij{position:relative}.overlay.svelte-1le7aij{filter:invert(100%) opacity(40%);left:0px;position:absolute}.box.svelte-1le7aij{padding:10px;margin:10px;border:0.5px solid rgb(224, 224, 224)}.break.svelte-1le7aij{flex-basis:100%;height:0}");
-}
-
-function get_each_context(ctx, list, i) {
-	const child_ctx = ctx.slice();
-	child_ctx[9] = list[i];
-	return child_ctx;
-}
-
-// (24:6) <Label>
 function create_default_slot_2(ctx) {
-	let t_value = /*segment*/ ctx[12] + "";
+	let t_value = /*segment*/ ctx[4] + "";
 	let t;
 
 	return {
 		c() {
 			t = text(t_value);
 		},
+		l(nodes) {
+			t = claim_text(nodes, t_value);
+		},
 		m(target, anchor) {
-			insert(target, t, anchor);
+			insert_hydration(target, t, anchor);
 		},
 		p(ctx, dirty) {
-			if (dirty & /*segment*/ 4096 && t_value !== (t_value = /*segment*/ ctx[12] + "")) set_data(t, t_value);
+			if (dirty & /*segment*/ 16 && t_value !== (t_value = /*segment*/ ctx[4] + "")) set_data(t, t_value);
 		},
 		d(detaching) {
 			if (detaching) detach(t);
@@ -4088,7 +4628,7 @@ function create_default_slot_2(ctx) {
 	};
 }
 
-// (23:4) <Segment {segment}>
+// (14:4) <Segment {segment}>
 function create_default_slot_1(ctx) {
 	let label;
 	let current;
@@ -4104,6 +4644,9 @@ function create_default_slot_1(ctx) {
 		c() {
 			create_component(label.$$.fragment);
 		},
+		l(nodes) {
+			claim_component(label.$$.fragment, nodes);
+		},
 		m(target, anchor) {
 			mount_component(label, target, anchor);
 			current = true;
@@ -4111,7 +4654,7 @@ function create_default_slot_1(ctx) {
 		p(ctx, dirty) {
 			const label_changes = {};
 
-			if (dirty & /*$$scope, segment*/ 12288) {
+			if (dirty & /*$$scope, segment*/ 48) {
 				label_changes.$$scope = { dirty, ctx };
 			}
 
@@ -4132,14 +4675,14 @@ function create_default_slot_1(ctx) {
 	};
 }
 
-// (22:2) <SegmentedButton segments={choices} let:segment bind:selected>
+// (13:2) <SegmentedButton segments={choices} let:segment bind:selected>
 function create_default_slot(ctx) {
 	let segment;
 	let current;
 
 	segment = new Segment({
 			props: {
-				segment: /*segment*/ ctx[12],
+				segment: /*segment*/ ctx[4],
 				$$slots: { default: [create_default_slot_1] },
 				$$scope: { ctx }
 			}
@@ -4149,15 +4692,18 @@ function create_default_slot(ctx) {
 		c() {
 			create_component(segment.$$.fragment);
 		},
+		l(nodes) {
+			claim_component(segment.$$.fragment, nodes);
+		},
 		m(target, anchor) {
 			mount_component(segment, target, anchor);
 			current = true;
 		},
 		p(ctx, dirty) {
 			const segment_changes = {};
-			if (dirty & /*segment*/ 4096) segment_changes.segment = /*segment*/ ctx[12];
+			if (dirty & /*segment*/ 16) segment_changes.segment = /*segment*/ ctx[4];
 
-			if (dirty & /*$$scope, segment*/ 12288) {
+			if (dirty & /*$$scope, segment*/ 48) {
 				segment_changes.$$scope = { dirty, ctx };
 			}
 
@@ -4178,270 +4724,70 @@ function create_default_slot(ctx) {
 	};
 }
 
-// (39:8) {#if selected.includes("Label")}
-function create_if_block_1(ctx) {
-	let img;
-	let img_src_value;
-	let img_alt_value;
-
-	return {
-		c() {
-			img = element("img");
-			attr(img, "class", "overlay svelte-1le7aij");
-			if (!src_url_equal(img.src, img_src_value = "/labels/" + /*row*/ ctx[9][/*labelColumn*/ ctx[2]])) attr(img, "src", img_src_value);
-			attr(img, "alt", img_alt_value = "Image thumbnail for instance " + /*row*/ ctx[9][/*labelColumn*/ ctx[2]]);
-			set_style(img, "width", `150px`, false);
-			set_style(img, "height", `150px`, false);
-		},
-		m(target, anchor) {
-			insert(target, img, anchor);
-		},
-		p(ctx, dirty) {
-			if (dirty & /*table, labelColumn*/ 5 && !src_url_equal(img.src, img_src_value = "/labels/" + /*row*/ ctx[9][/*labelColumn*/ ctx[2]])) {
-				attr(img, "src", img_src_value);
-			}
-
-			if (dirty & /*table, labelColumn*/ 5 && img_alt_value !== (img_alt_value = "Image thumbnail for instance " + /*row*/ ctx[9][/*labelColumn*/ ctx[2]])) {
-				attr(img, "alt", img_alt_value);
-			}
-		},
-		d(detaching) {
-			if (detaching) detach(img);
-		}
-	};
-}
-
-// (48:8) {#if row[modelColumn] && selected.includes("Model")}
-function create_if_block(ctx) {
-	let img;
-	let img_src_value;
-	let img_alt_value;
-
-	return {
-		c() {
-			img = element("img");
-			attr(img, "class", "overlay svelte-1le7aij");
-			if (!src_url_equal(img.src, img_src_value = "/cache/" + /*modelColumn*/ ctx[1] + "/" + /*row*/ ctx[9][/*modelColumn*/ ctx[1]])) attr(img, "src", img_src_value);
-			attr(img, "alt", img_alt_value = "Image thumbnail for instance " + /*row*/ ctx[9][/*modelColumn*/ ctx[1]]);
-			set_style(img, "width", `150px`, false);
-			set_style(img, "height", `150px`, false);
-		},
-		m(target, anchor) {
-			insert(target, img, anchor);
-		},
-		p(ctx, dirty) {
-			if (dirty & /*modelColumn, table*/ 3 && !src_url_equal(img.src, img_src_value = "/cache/" + /*modelColumn*/ ctx[1] + "/" + /*row*/ ctx[9][/*modelColumn*/ ctx[1]])) {
-				attr(img, "src", img_src_value);
-			}
-
-			if (dirty & /*table, modelColumn*/ 3 && img_alt_value !== (img_alt_value = "Image thumbnail for instance " + /*row*/ ctx[9][/*modelColumn*/ ctx[1]])) {
-				attr(img, "alt", img_alt_value);
-			}
-		},
-		d(detaching) {
-			if (detaching) detach(img);
-		}
-	};
-}
-
-// (30:2) {#each table as row}
-function create_each_block(ctx) {
-	let div1;
-	let div0;
-	let img;
-	let img_src_value;
-	let img_alt_value;
-	let t0;
-	let show_if_1 = /*selected*/ ctx[4].includes("Label");
-	let t1;
-	let show_if = /*row*/ ctx[9][/*modelColumn*/ ctx[1]] && /*selected*/ ctx[4].includes("Model");
-	let t2;
-	let if_block0 = show_if_1 && create_if_block_1(ctx);
-	let if_block1 = show_if && create_if_block(ctx);
-
-	return {
-		c() {
-			div1 = element("div");
-			div0 = element("div");
-			img = element("img");
-			t0 = space();
-			if (if_block0) if_block0.c();
-			t1 = space();
-			if (if_block1) if_block1.c();
-			t2 = space();
-			if (!src_url_equal(img.src, img_src_value = "/data/" + /*row*/ ctx[9][/*idColumn*/ ctx[3]])) attr(img, "src", img_src_value);
-			attr(img, "alt", img_alt_value = "Image thumbnail for instance " + /*row*/ ctx[9][/*idColumn*/ ctx[3]]);
-			set_style(img, "width", `150px`, false);
-			set_style(img, "height", `150px`, false);
-			attr(div0, "id", "overlays");
-			attr(div0, "class", "svelte-1le7aij");
-			attr(div1, "class", "box svelte-1le7aij");
-		},
-		m(target, anchor) {
-			insert(target, div1, anchor);
-			append(div1, div0);
-			append(div0, img);
-			append(div0, t0);
-			if (if_block0) if_block0.m(div0, null);
-			append(div0, t1);
-			if (if_block1) if_block1.m(div0, null);
-			append(div1, t2);
-		},
-		p(ctx, dirty) {
-			if (dirty & /*table, idColumn*/ 9 && !src_url_equal(img.src, img_src_value = "/data/" + /*row*/ ctx[9][/*idColumn*/ ctx[3]])) {
-				attr(img, "src", img_src_value);
-			}
-
-			if (dirty & /*table, idColumn*/ 9 && img_alt_value !== (img_alt_value = "Image thumbnail for instance " + /*row*/ ctx[9][/*idColumn*/ ctx[3]])) {
-				attr(img, "alt", img_alt_value);
-			}
-
-			if (dirty & /*selected*/ 16) show_if_1 = /*selected*/ ctx[4].includes("Label");
-
-			if (show_if_1) {
-				if (if_block0) {
-					if_block0.p(ctx, dirty);
-				} else {
-					if_block0 = create_if_block_1(ctx);
-					if_block0.c();
-					if_block0.m(div0, t1);
-				}
-			} else if (if_block0) {
-				if_block0.d(1);
-				if_block0 = null;
-			}
-
-			if (dirty & /*table, modelColumn, selected*/ 19) show_if = /*row*/ ctx[9][/*modelColumn*/ ctx[1]] && /*selected*/ ctx[4].includes("Model");
-
-			if (show_if) {
-				if (if_block1) {
-					if_block1.p(ctx, dirty);
-				} else {
-					if_block1 = create_if_block(ctx);
-					if_block1.c();
-					if_block1.m(div0, null);
-				}
-			} else if (if_block1) {
-				if_block1.d(1);
-				if_block1 = null;
-			}
-		},
-		d(detaching) {
-			if (detaching) detach(div1);
-			if (if_block0) if_block0.d();
-			if (if_block1) if_block1.d();
-		}
-	};
-}
-
 function create_fragment(ctx) {
-	let div0;
+	let div;
 	let segmentedbutton;
 	let updating_selected;
-	let t0;
-	let div1;
-	let t1;
-	let div2;
 	let current;
 
 	function segmentedbutton_selected_binding(value) {
-		/*segmentedbutton_selected_binding*/ ctx[8](value);
+		/*segmentedbutton_selected_binding*/ ctx[3](value);
 	}
 
 	let segmentedbutton_props = {
-		segments: /*choices*/ ctx[5],
+		segments: /*choices*/ ctx[1],
 		$$slots: {
 			default: [
 				create_default_slot,
-				({ segment }) => ({ 12: segment }),
-				({ segment }) => segment ? 4096 : 0
+				({ segment }) => ({ 4: segment }),
+				({ segment }) => segment ? 16 : 0
 			]
 		},
 		$$scope: { ctx }
 	};
 
-	if (/*selected*/ ctx[4] !== void 0) {
-		segmentedbutton_props.selected = /*selected*/ ctx[4];
+	if (/*selected*/ ctx[0] !== void 0) {
+		segmentedbutton_props.selected = /*selected*/ ctx[0];
 	}
 
 	segmentedbutton = new SegmentedButton({ props: segmentedbutton_props });
 	binding_callbacks.push(() => bind(segmentedbutton, 'selected', segmentedbutton_selected_binding));
-	let each_value = /*table*/ ctx[0];
-	let each_blocks = [];
-
-	for (let i = 0; i < each_value.length; i += 1) {
-		each_blocks[i] = create_each_block(get_each_context(ctx, each_value, i));
-	}
 
 	return {
 		c() {
-			div0 = element("div");
+			div = element("div");
 			create_component(segmentedbutton.$$.fragment);
-			t0 = space();
-			div1 = element("div");
-			t1 = space();
-			div2 = element("div");
-
-			for (let i = 0; i < each_blocks.length; i += 1) {
-				each_blocks[i].c();
-			}
-
-			set_style(div0, "margin-left", `10px`, false);
-			attr(div1, "class", "break svelte-1le7aij");
-			attr(div2, "id", "container");
-			attr(div2, "class", "svelte-1le7aij");
+			this.h();
+		},
+		l(nodes) {
+			div = claim_element(nodes, "DIV", {});
+			var div_nodes = children(div);
+			claim_component(segmentedbutton.$$.fragment, div_nodes);
+			div_nodes.forEach(detach);
+			this.h();
+		},
+		h() {
+			set_style(div, "margin-left", `10px`, false);
 		},
 		m(target, anchor) {
-			insert(target, div0, anchor);
-			mount_component(segmentedbutton, div0, null);
-			insert(target, t0, anchor);
-			insert(target, div1, anchor);
-			insert(target, t1, anchor);
-			insert(target, div2, anchor);
-
-			for (let i = 0; i < each_blocks.length; i += 1) {
-				each_blocks[i].m(div2, null);
-			}
-
+			insert_hydration(target, div, anchor);
+			mount_component(segmentedbutton, div, null);
 			current = true;
 		},
 		p(ctx, [dirty]) {
 			const segmentedbutton_changes = {};
 
-			if (dirty & /*$$scope, segment*/ 12288) {
+			if (dirty & /*$$scope, segment*/ 48) {
 				segmentedbutton_changes.$$scope = { dirty, ctx };
 			}
 
-			if (!updating_selected && dirty & /*selected*/ 16) {
+			if (!updating_selected && dirty & /*selected*/ 1) {
 				updating_selected = true;
-				segmentedbutton_changes.selected = /*selected*/ ctx[4];
+				segmentedbutton_changes.selected = /*selected*/ ctx[0];
 				add_flush_callback(() => updating_selected = false);
 			}
 
 			segmentedbutton.$set(segmentedbutton_changes);
-
-			if (dirty & /*modelColumn, table, selected, labelColumn, idColumn*/ 31) {
-				each_value = /*table*/ ctx[0];
-				let i;
-
-				for (i = 0; i < each_value.length; i += 1) {
-					const child_ctx = get_each_context(ctx, each_value, i);
-
-					if (each_blocks[i]) {
-						each_blocks[i].p(child_ctx, dirty);
-					} else {
-						each_blocks[i] = create_each_block(child_ctx);
-						each_blocks[i].c();
-						each_blocks[i].m(div2, null);
-					}
-				}
-
-				for (; i < each_blocks.length; i += 1) {
-					each_blocks[i].d(1);
-				}
-
-				each_blocks.length = each_value.length;
-			}
 		},
 		i(local) {
 			if (current) return;
@@ -4453,99 +4799,74 @@ function create_fragment(ctx) {
 			current = false;
 		},
 		d(detaching) {
-			if (detaching) detach(div0);
+			if (detaching) detach(div);
 			destroy_component(segmentedbutton);
-			if (detaching) detach(t0);
-			if (detaching) detach(div1);
-			if (detaching) detach(t1);
-			if (detaching) detach(div2);
-			destroy_each(each_blocks, detaching);
 		}
 	};
 }
 
 function instance($$self, $$props, $$invalidate) {
+	let { setOptions } = $$props;
 	let choices = ["Label", "Model"];
 	let selected = ["Label"];
-	let { table } = $$props;
-	let { modelColumn } = $$props;
-	let { labelColumn } = $$props;
-	let { dataColumn } = $$props;
-	let { transformColumn } = $$props;
-	let { idColumn } = $$props;
 
 	function segmentedbutton_selected_binding(value) {
 		selected = value;
-		$$invalidate(4, selected);
+		$$invalidate(0, selected);
 	}
 
 	$$self.$$set = $$props => {
-		if ('table' in $$props) $$invalidate(0, table = $$props.table);
-		if ('modelColumn' in $$props) $$invalidate(1, modelColumn = $$props.modelColumn);
-		if ('labelColumn' in $$props) $$invalidate(2, labelColumn = $$props.labelColumn);
-		if ('dataColumn' in $$props) $$invalidate(6, dataColumn = $$props.dataColumn);
-		if ('transformColumn' in $$props) $$invalidate(7, transformColumn = $$props.transformColumn);
-		if ('idColumn' in $$props) $$invalidate(3, idColumn = $$props.idColumn);
+		if ('setOptions' in $$props) $$invalidate(2, setOptions = $$props.setOptions);
 	};
 
-	return [
-		table,
-		modelColumn,
-		labelColumn,
-		idColumn,
-		selected,
-		choices,
-		dataColumn,
-		transformColumn,
-		segmentedbutton_selected_binding
-	];
+	$$self.$$.update = () => {
+		if ($$self.$$.dirty & /*setOptions, selected*/ 5) {
+			setOptions({ mask: selected });
+		}
+	};
+
+	return [selected, choices, setOptions, segmentedbutton_selected_binding];
 }
 
-class Component extends SvelteComponent {
+class OptionsView extends SvelteComponent {
 	constructor(options) {
 		super();
-
-		init(
-			this,
-			options,
-			instance,
-			create_fragment,
-			safe_not_equal,
-			{
-				table: 0,
-				modelColumn: 1,
-				labelColumn: 2,
-				dataColumn: 6,
-				transformColumn: 7,
-				idColumn: 3
-			},
-			add_css
-		);
+		init(this, options, instance, create_fragment, safe_not_equal, { setOptions: 2 });
 	}
 }
 
-function getView(
-  table,
+function getInstance(
+  div,
+  viewOptions,
+  entry,
   modelColumn,
   labelColumn,
   dataColumn,
   transformColumn,
   idColumn
 ) {
-  let div = document.createElement("div");
-
-  new Component({
+  new InstanceView({
     target: div,
     props: {
-      table: table,
+      entry: entry,
+      viewOptions: viewOptions,
       modelColumn: modelColumn,
       labelColumn: labelColumn,
       dataColumn: dataColumn,
       transformColumn: transformColumn,
       idColumn: idColumn,
     },
+    hydrate: true,
   });
-  return div;
 }
 
-export { getView as default };
+function getOptions(div, setOptions) {
+  new OptionsView({
+    target: div,
+    props: {
+      setOptions,
+    },
+  });
+}
+
+export { getInstance, getOptions };
