@@ -6,5 +6,15 @@ import pkg from "./package.json";
 export default {
   input: "src/index.js",
   output: [{ file: pkg.module, format: "es" }],
-  plugins: [commonjs(), svelte({ emitCss: false }), resolve()],
+  plugins: [
+    commonjs(),
+    svelte({
+      emitCss: false,
+      compilerOptions: {
+        hydratable: true,
+      },
+    }),
+    ,
+    resolve(),
+  ],
 };

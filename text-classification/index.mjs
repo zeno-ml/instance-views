@@ -17,6 +17,108 @@ function safe_not_equal(a, b) {
 function is_empty(obj) {
     return Object.keys(obj).length === 0;
 }
+
+// Track which nodes are claimed during hydration. Unclaimed nodes can then be removed from the DOM
+// at the end of hydration without touching the remaining nodes.
+let is_hydrating = false;
+function start_hydrating() {
+    is_hydrating = true;
+}
+function end_hydrating() {
+    is_hydrating = false;
+}
+function upper_bound(low, high, key, value) {
+    // Return first index of value larger than input value in the range [low, high)
+    while (low < high) {
+        const mid = low + ((high - low) >> 1);
+        if (key(mid) <= value) {
+            low = mid + 1;
+        }
+        else {
+            high = mid;
+        }
+    }
+    return low;
+}
+function init_hydrate(target) {
+    if (target.hydrate_init)
+        return;
+    target.hydrate_init = true;
+    // We know that all children have claim_order values since the unclaimed have been detached if target is not <head>
+    let children = target.childNodes;
+    // If target is <head>, there may be children without claim_order
+    if (target.nodeName === 'HEAD') {
+        const myChildren = [];
+        for (let i = 0; i < children.length; i++) {
+            const node = children[i];
+            if (node.claim_order !== undefined) {
+                myChildren.push(node);
+            }
+        }
+        children = myChildren;
+    }
+    /*
+    * Reorder claimed children optimally.
+    * We can reorder claimed children optimally by finding the longest subsequence of
+    * nodes that are already claimed in order and only moving the rest. The longest
+    * subsequence subsequence of nodes that are claimed in order can be found by
+    * computing the longest increasing subsequence of .claim_order values.
+    *
+    * This algorithm is optimal in generating the least amount of reorder operations
+    * possible.
+    *
+    * Proof:
+    * We know that, given a set of reordering operations, the nodes that do not move
+    * always form an increasing subsequence, since they do not move among each other
+    * meaning that they must be already ordered among each other. Thus, the maximal
+    * set of nodes that do not move form a longest increasing subsequence.
+    */
+    // Compute longest increasing subsequence
+    // m: subsequence length j => index k of smallest value that ends an increasing subsequence of length j
+    const m = new Int32Array(children.length + 1);
+    // Predecessor indices + 1
+    const p = new Int32Array(children.length);
+    m[0] = -1;
+    let longest = 0;
+    for (let i = 0; i < children.length; i++) {
+        const current = children[i].claim_order;
+        // Find the largest subsequence length such that it ends in a value less than our current value
+        // upper_bound returns first greater value, so we subtract one
+        // with fast path for when we are on the current longest subsequence
+        const seqLen = ((longest > 0 && children[m[longest]].claim_order <= current) ? longest + 1 : upper_bound(1, longest, idx => children[m[idx]].claim_order, current)) - 1;
+        p[i] = m[seqLen] + 1;
+        const newLen = seqLen + 1;
+        // We can guarantee that current is the smallest value. Otherwise, we would have generated a longer sequence.
+        m[newLen] = i;
+        longest = Math.max(newLen, longest);
+    }
+    // The longest increasing subsequence of nodes (initially reversed)
+    const lis = [];
+    // The rest of the nodes, nodes that will be moved
+    const toMove = [];
+    let last = children.length - 1;
+    for (let cur = m[longest] + 1; cur != 0; cur = p[cur - 1]) {
+        lis.push(children[cur - 1]);
+        for (; last >= cur; last--) {
+            toMove.push(children[last]);
+        }
+        last--;
+    }
+    for (; last >= 0; last--) {
+        toMove.push(children[last]);
+    }
+    lis.reverse();
+    // We sort the nodes being moved to guarantee that their insertion order matches the claim order
+    toMove.sort((a, b) => a.claim_order - b.claim_order);
+    // Finally, we move the nodes
+    for (let i = 0, j = 0; i < toMove.length; i++) {
+        while (j < lis.length && toMove[i].claim_order >= lis[j].claim_order) {
+            j++;
+        }
+        const anchor = j < lis.length ? lis[j] : null;
+        target.insertBefore(toMove[i], anchor);
+    }
+}
 function append(target, node) {
     target.appendChild(node);
 }
@@ -41,17 +143,40 @@ function get_root_for_style(node) {
 function append_stylesheet(node, style) {
     append(node.head || node, style);
 }
-function insert(target, node, anchor) {
-    target.insertBefore(node, anchor || null);
+function append_hydration(target, node) {
+    if (is_hydrating) {
+        init_hydrate(target);
+        if ((target.actual_end_child === undefined) || ((target.actual_end_child !== null) && (target.actual_end_child.parentElement !== target))) {
+            target.actual_end_child = target.firstChild;
+        }
+        // Skip nodes of undefined ordering
+        while ((target.actual_end_child !== null) && (target.actual_end_child.claim_order === undefined)) {
+            target.actual_end_child = target.actual_end_child.nextSibling;
+        }
+        if (node !== target.actual_end_child) {
+            // We only insert if the ordering of this node should be modified or the parent node is not target
+            if (node.claim_order !== undefined || node.parentNode !== target) {
+                target.insertBefore(node, target.actual_end_child);
+            }
+        }
+        else {
+            target.actual_end_child = node.nextSibling;
+        }
+    }
+    else if (node.parentNode !== target || node.nextSibling !== null) {
+        target.appendChild(node);
+    }
+}
+function insert_hydration(target, node, anchor) {
+    if (is_hydrating && !anchor) {
+        append_hydration(target, node);
+    }
+    else if (node.parentNode !== target || node.nextSibling != anchor) {
+        target.insertBefore(node, anchor || null);
+    }
 }
 function detach(node) {
     node.parentNode.removeChild(node);
-}
-function destroy_each(iterations, detaching) {
-    for (let i = 0; i < iterations.length; i += 1) {
-        if (iterations[i])
-            iterations[i].d(detaching);
-    }
 }
 function element(name) {
     return document.createElement(name);
@@ -70,6 +195,94 @@ function attr(node, attribute, value) {
 }
 function children(element) {
     return Array.from(element.childNodes);
+}
+function init_claim_info(nodes) {
+    if (nodes.claim_info === undefined) {
+        nodes.claim_info = { last_index: 0, total_claimed: 0 };
+    }
+}
+function claim_node(nodes, predicate, processNode, createNode, dontUpdateLastIndex = false) {
+    // Try to find nodes in an order such that we lengthen the longest increasing subsequence
+    init_claim_info(nodes);
+    const resultNode = (() => {
+        // We first try to find an element after the previous one
+        for (let i = nodes.claim_info.last_index; i < nodes.length; i++) {
+            const node = nodes[i];
+            if (predicate(node)) {
+                const replacement = processNode(node);
+                if (replacement === undefined) {
+                    nodes.splice(i, 1);
+                }
+                else {
+                    nodes[i] = replacement;
+                }
+                if (!dontUpdateLastIndex) {
+                    nodes.claim_info.last_index = i;
+                }
+                return node;
+            }
+        }
+        // Otherwise, we try to find one before
+        // We iterate in reverse so that we don't go too far back
+        for (let i = nodes.claim_info.last_index - 1; i >= 0; i--) {
+            const node = nodes[i];
+            if (predicate(node)) {
+                const replacement = processNode(node);
+                if (replacement === undefined) {
+                    nodes.splice(i, 1);
+                }
+                else {
+                    nodes[i] = replacement;
+                }
+                if (!dontUpdateLastIndex) {
+                    nodes.claim_info.last_index = i;
+                }
+                else if (replacement === undefined) {
+                    // Since we spliced before the last_index, we decrease it
+                    nodes.claim_info.last_index--;
+                }
+                return node;
+            }
+        }
+        // If we can't find any matching node, we create a new one
+        return createNode();
+    })();
+    resultNode.claim_order = nodes.claim_info.total_claimed;
+    nodes.claim_info.total_claimed += 1;
+    return resultNode;
+}
+function claim_element_base(nodes, name, attributes, create_element) {
+    return claim_node(nodes, (node) => node.nodeName === name, (node) => {
+        const remove = [];
+        for (let j = 0; j < node.attributes.length; j++) {
+            const attribute = node.attributes[j];
+            if (!attributes[attribute.name]) {
+                remove.push(attribute.name);
+            }
+        }
+        remove.forEach(v => node.removeAttribute(v));
+        return undefined;
+    }, () => create_element(name));
+}
+function claim_element(nodes, name, attributes) {
+    return claim_element_base(nodes, name, attributes, element);
+}
+function claim_text(nodes, data) {
+    return claim_node(nodes, (node) => node.nodeType === 3, (node) => {
+        const dataStr = '' + data;
+        if (node.data.startsWith(dataStr)) {
+            if (node.data.length !== dataStr.length) {
+                return node.splitText(dataStr.length);
+            }
+        }
+        else {
+            node.data = dataStr;
+        }
+    }, () => text(data), true // Text nodes should not update last index since it is likely not worth it to eliminate an increasing subsequence of actual elements
+    );
+}
+function claim_space(nodes) {
+    return claim_text(nodes, ' ');
 }
 function set_data(text, data) {
     data = '' + data;
@@ -254,6 +467,7 @@ function init(component, options, instance, create_fragment, not_equal, props, a
     $$.fragment = create_fragment ? create_fragment($$.ctx) : false;
     if (options.target) {
         if (options.hydrate) {
+            start_hydrating();
             const nodes = children(options.target);
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             $$.fragment && $$.fragment.l(nodes);
@@ -266,6 +480,7 @@ function init(component, options, instance, create_fragment, not_equal, props, a
         if (options.intro)
             transition_in(component.$$.fragment);
         mount_component(component, options.target, options.anchor, options.customElement);
+        end_hydrating();
         flush();
     }
     set_current_component(parent_component);
@@ -296,26 +511,21 @@ class SvelteComponent {
     }
 }
 
-/* src/Component.svelte generated by Svelte v3.49.0 */
+/* src/InstanceView.svelte generated by Svelte v3.49.0 */
 
 function add_css(target) {
-	append_styles(target, "svelte-9etv5t", "#container.svelte-9etv5t{display:flex;flex-direction:row;flex-wrap:wrap}.label.svelte-9etv5t{font-size:12px;color:rgba(0, 0, 0, 0.5);font-variant:small-caps}.value.svelte-9etv5t{font-size:12px}.box.svelte-9etv5t{padding:10px;margin:10px;border:0.5px solid rgb(224, 224, 224)}");
+	append_styles(target, "svelte-1g1ctpu", ".label.svelte-1g1ctpu{font-size:12px;color:rgba(0, 0, 0, 0.5);font-variant:small-caps}.value.svelte-1g1ctpu{font-size:12px}.box.svelte-1g1ctpu{padding:10px;margin:10px;border:0.5px solid rgb(224, 224, 224)}");
 }
 
-function get_each_context(ctx, list, i) {
-	const child_ctx = ctx.slice();
-	child_ctx[6] = list[i];
-	return child_ctx;
-}
-
-// (24:6) {#if modelColumn && row[modelColumn] !== undefined}
+// (23:2) {#if modelColumn && entry[modelColumn] !== undefined}
 function create_if_block(ctx) {
 	let br;
 	let t0;
 	let span0;
+	let t1;
 	let t2;
 	let span1;
-	let t3_value = /*row*/ ctx[6][/*modelColumn*/ ctx[1]] + "";
+	let t3_value = /*entry*/ ctx[0][/*modelColumn*/ ctx[1]] + "";
 	let t3;
 
 	return {
@@ -323,23 +533,41 @@ function create_if_block(ctx) {
 			br = element("br");
 			t0 = space();
 			span0 = element("span");
-			span0.textContent = "output:";
+			t1 = text("output:");
 			t2 = space();
 			span1 = element("span");
 			t3 = text(t3_value);
-			attr(span0, "class", "label svelte-9etv5t");
-			attr(span1, "class", "value svelte-9etv5t");
+			this.h();
+		},
+		l(nodes) {
+			br = claim_element(nodes, "BR", {});
+			t0 = claim_space(nodes);
+			span0 = claim_element(nodes, "SPAN", { class: true });
+			var span0_nodes = children(span0);
+			t1 = claim_text(span0_nodes, "output:");
+			span0_nodes.forEach(detach);
+			t2 = claim_space(nodes);
+			span1 = claim_element(nodes, "SPAN", { class: true });
+			var span1_nodes = children(span1);
+			t3 = claim_text(span1_nodes, t3_value);
+			span1_nodes.forEach(detach);
+			this.h();
+		},
+		h() {
+			attr(span0, "class", "label svelte-1g1ctpu");
+			attr(span1, "class", "value svelte-1g1ctpu");
 		},
 		m(target, anchor) {
-			insert(target, br, anchor);
-			insert(target, t0, anchor);
-			insert(target, span0, anchor);
-			insert(target, t2, anchor);
-			insert(target, span1, anchor);
-			append(span1, t3);
+			insert_hydration(target, br, anchor);
+			insert_hydration(target, t0, anchor);
+			insert_hydration(target, span0, anchor);
+			append_hydration(span0, t1);
+			insert_hydration(target, t2, anchor);
+			insert_hydration(target, span1, anchor);
+			append_hydration(span1, t3);
 		},
 		p(ctx, dirty) {
-			if (dirty & /*table, modelColumn*/ 3 && t3_value !== (t3_value = /*row*/ ctx[6][/*modelColumn*/ ctx[1]] + "")) set_data(t3, t3_value);
+			if (dirty & /*entry, modelColumn*/ 3 && t3_value !== (t3_value = /*entry*/ ctx[0][/*modelColumn*/ ctx[1]] + "")) set_data(t3, t3_value);
 		},
 		d(detaching) {
 			if (detaching) detach(br);
@@ -351,22 +579,21 @@ function create_if_block(ctx) {
 	};
 }
 
-// (17:2) {#each table as row}
-function create_each_block(ctx) {
+function create_fragment(ctx) {
 	let div;
 	let span0;
-	let t0_value = /*row*/ ctx[6][/*dataColumn*/ ctx[3]] + "";
+	let t0_value = /*entry*/ ctx[0][/*dataColumn*/ ctx[3]] + "";
 	let t0;
 	let t1;
 	let br;
 	let t2;
 	let span1;
+	let t3;
 	let span2;
-	let t4_value = /*row*/ ctx[6][/*labelColumn*/ ctx[2]] + "";
+	let t4_value = /*entry*/ ctx[0][/*labelColumn*/ ctx[2]] + "";
 	let t4;
 	let t5;
-	let t6;
-	let if_block = /*modelColumn*/ ctx[1] && /*row*/ ctx[6][/*modelColumn*/ ctx[1]] !== undefined && create_if_block(ctx);
+	let if_block = /*modelColumn*/ ctx[1] && /*entry*/ ctx[0][/*modelColumn*/ ctx[1]] !== undefined && create_if_block(ctx);
 
 	return {
 		c() {
@@ -377,47 +604,74 @@ function create_each_block(ctx) {
 			br = element("br");
 			t2 = space();
 			span1 = element("span");
-			span1.textContent = "label: ";
+			t3 = text("label: ");
 			span2 = element("span");
 			t4 = text(t4_value);
 			t5 = space();
 			if (if_block) if_block.c();
-			t6 = space();
-			attr(span1, "class", "label svelte-9etv5t");
-			attr(span2, "class", "value svelte-9etv5t");
-			attr(div, "class", "box svelte-9etv5t");
+			this.h();
+		},
+		l(nodes) {
+			div = claim_element(nodes, "DIV", { class: true });
+			var div_nodes = children(div);
+			span0 = claim_element(div_nodes, "SPAN", {});
+			var span0_nodes = children(span0);
+			t0 = claim_text(span0_nodes, t0_value);
+			span0_nodes.forEach(detach);
+			t1 = claim_space(div_nodes);
+			br = claim_element(div_nodes, "BR", {});
+			t2 = claim_space(div_nodes);
+			span1 = claim_element(div_nodes, "SPAN", { class: true });
+			var span1_nodes = children(span1);
+			t3 = claim_text(span1_nodes, "label: ");
+			span1_nodes.forEach(detach);
+			span2 = claim_element(div_nodes, "SPAN", { class: true });
+			var span2_nodes = children(span2);
+			t4 = claim_text(span2_nodes, t4_value);
+			span2_nodes.forEach(detach);
+			t5 = claim_space(div_nodes);
+			if (if_block) if_block.l(div_nodes);
+			div_nodes.forEach(detach);
+			this.h();
+		},
+		h() {
+			attr(span1, "class", "label svelte-1g1ctpu");
+			attr(span2, "class", "value svelte-1g1ctpu");
+			attr(div, "class", "box svelte-1g1ctpu");
 		},
 		m(target, anchor) {
-			insert(target, div, anchor);
-			append(div, span0);
-			append(span0, t0);
-			append(div, t1);
-			append(div, br);
-			append(div, t2);
-			append(div, span1);
-			append(div, span2);
-			append(span2, t4);
-			append(div, t5);
+			insert_hydration(target, div, anchor);
+			append_hydration(div, span0);
+			append_hydration(span0, t0);
+			append_hydration(div, t1);
+			append_hydration(div, br);
+			append_hydration(div, t2);
+			append_hydration(div, span1);
+			append_hydration(span1, t3);
+			append_hydration(div, span2);
+			append_hydration(span2, t4);
+			append_hydration(div, t5);
 			if (if_block) if_block.m(div, null);
-			append(div, t6);
 		},
-		p(ctx, dirty) {
-			if (dirty & /*table, dataColumn*/ 9 && t0_value !== (t0_value = /*row*/ ctx[6][/*dataColumn*/ ctx[3]] + "")) set_data(t0, t0_value);
-			if (dirty & /*table, labelColumn*/ 5 && t4_value !== (t4_value = /*row*/ ctx[6][/*labelColumn*/ ctx[2]] + "")) set_data(t4, t4_value);
+		p(ctx, [dirty]) {
+			if (dirty & /*entry, dataColumn*/ 9 && t0_value !== (t0_value = /*entry*/ ctx[0][/*dataColumn*/ ctx[3]] + "")) set_data(t0, t0_value);
+			if (dirty & /*entry, labelColumn*/ 5 && t4_value !== (t4_value = /*entry*/ ctx[0][/*labelColumn*/ ctx[2]] + "")) set_data(t4, t4_value);
 
-			if (/*modelColumn*/ ctx[1] && /*row*/ ctx[6][/*modelColumn*/ ctx[1]] !== undefined) {
+			if (/*modelColumn*/ ctx[1] && /*entry*/ ctx[0][/*modelColumn*/ ctx[1]] !== undefined) {
 				if (if_block) {
 					if_block.p(ctx, dirty);
 				} else {
 					if_block = create_if_block(ctx);
 					if_block.c();
-					if_block.m(div, t6);
+					if_block.m(div, null);
 				}
 			} else if (if_block) {
 				if_block.d(1);
 				if_block = null;
 			}
 		},
+		i: noop,
+		o: noop,
 		d(detaching) {
 			if (detaching) detach(div);
 			if (if_block) if_block.d();
@@ -425,68 +679,9 @@ function create_each_block(ctx) {
 	};
 }
 
-function create_fragment(ctx) {
-	let div;
-	let each_value = /*table*/ ctx[0];
-	let each_blocks = [];
-
-	for (let i = 0; i < each_value.length; i += 1) {
-		each_blocks[i] = create_each_block(get_each_context(ctx, each_value, i));
-	}
-
-	return {
-		c() {
-			div = element("div");
-
-			for (let i = 0; i < each_blocks.length; i += 1) {
-				each_blocks[i].c();
-			}
-
-			attr(div, "id", "container");
-			attr(div, "class", "svelte-9etv5t");
-		},
-		m(target, anchor) {
-			insert(target, div, anchor);
-
-			for (let i = 0; i < each_blocks.length; i += 1) {
-				each_blocks[i].m(div, null);
-			}
-		},
-		p(ctx, [dirty]) {
-			if (dirty & /*table, modelColumn, undefined, labelColumn, dataColumn*/ 15) {
-				each_value = /*table*/ ctx[0];
-				let i;
-
-				for (i = 0; i < each_value.length; i += 1) {
-					const child_ctx = get_each_context(ctx, each_value, i);
-
-					if (each_blocks[i]) {
-						each_blocks[i].p(child_ctx, dirty);
-					} else {
-						each_blocks[i] = create_each_block(child_ctx);
-						each_blocks[i].c();
-						each_blocks[i].m(div, null);
-					}
-				}
-
-				for (; i < each_blocks.length; i += 1) {
-					each_blocks[i].d(1);
-				}
-
-				each_blocks.length = each_value.length;
-			}
-		},
-		i: noop,
-		o: noop,
-		d(detaching) {
-			if (detaching) detach(div);
-			destroy_each(each_blocks, detaching);
-		}
-	};
-}
-
 function instance($$self, $$props, $$invalidate) {
-	let { table } = $$props;
+	let { entry } = $$props;
+	let { options } = $$props;
 	let { modelColumn } = $$props;
 	let { labelColumn } = $$props;
 	let { dataColumn } = $$props;
@@ -494,18 +689,27 @@ function instance($$self, $$props, $$invalidate) {
 	let { idColumn } = $$props;
 
 	$$self.$$set = $$props => {
-		if ('table' in $$props) $$invalidate(0, table = $$props.table);
+		if ('entry' in $$props) $$invalidate(0, entry = $$props.entry);
+		if ('options' in $$props) $$invalidate(4, options = $$props.options);
 		if ('modelColumn' in $$props) $$invalidate(1, modelColumn = $$props.modelColumn);
 		if ('labelColumn' in $$props) $$invalidate(2, labelColumn = $$props.labelColumn);
 		if ('dataColumn' in $$props) $$invalidate(3, dataColumn = $$props.dataColumn);
-		if ('transformColumn' in $$props) $$invalidate(4, transformColumn = $$props.transformColumn);
-		if ('idColumn' in $$props) $$invalidate(5, idColumn = $$props.idColumn);
+		if ('transformColumn' in $$props) $$invalidate(5, transformColumn = $$props.transformColumn);
+		if ('idColumn' in $$props) $$invalidate(6, idColumn = $$props.idColumn);
 	};
 
-	return [table, modelColumn, labelColumn, dataColumn, transformColumn, idColumn];
+	return [
+		entry,
+		modelColumn,
+		labelColumn,
+		dataColumn,
+		options,
+		transformColumn,
+		idColumn
+	];
 }
 
-class Component extends SvelteComponent {
+class InstanceView extends SvelteComponent {
 	constructor(options) {
 		super();
 
@@ -516,40 +720,42 @@ class Component extends SvelteComponent {
 			create_fragment,
 			safe_not_equal,
 			{
-				table: 0,
+				entry: 0,
+				options: 4,
 				modelColumn: 1,
 				labelColumn: 2,
 				dataColumn: 3,
-				transformColumn: 4,
-				idColumn: 5
+				transformColumn: 5,
+				idColumn: 6
 			},
 			add_css
 		);
 	}
 }
 
-function getView(
-  table,
+function getInstance(
+  div,
+  options,
+  entry,
   modelColumn,
   labelColumn,
   dataColumn,
   transformColumn,
   idColumn
 ) {
-  let div = document.createElement("div");
-
-  new Component({
+  new InstanceView({
     target: div,
     props: {
-      table: table,
+      entry: entry,
+      options: options,
       modelColumn: modelColumn,
       labelColumn: labelColumn,
       dataColumn: dataColumn,
       transformColumn: transformColumn,
       idColumn: idColumn,
     },
+    hydrate: true,
   });
-  return div;
 }
 
-export { getView as default };
+export { InstanceView, getInstance };

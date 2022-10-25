@@ -1,25 +1,26 @@
-import Component from "./Component.svelte";
+import InstanceView from "./InstanceView.svelte";
 
-export default function getView(
-  table,
+export function getInstance(
+  div,
+  options,
+  entry,
   modelColumn,
   labelColumn,
   dataColumn,
   transformColumn,
   idColumn
 ) {
-  let div = document.createElement("div");
-
-  const app = new Component({
+  new InstanceView({
     target: div,
     props: {
-      table: table,
+      entry: entry,
+      options: options,
       modelColumn: modelColumn,
       labelColumn: labelColumn,
       dataColumn: dataColumn,
       transformColumn: transformColumn,
       idColumn: idColumn,
     },
+    hydrate: true,
   });
-  return div;
 }

@@ -7,7 +7,6 @@
   let selected = ["Label"];
 
   $: setOptions({ mask: selected });
-  $: console.log(selected);
 </script>
 
 <div style:margin-left="10px">
@@ -16,5 +15,4 @@
       <Label>{segment}</Label>
     </Segment>
   </SegmentedButton>
-  <button on:click={() => console.log("hi")}>click</button>
 </div>
