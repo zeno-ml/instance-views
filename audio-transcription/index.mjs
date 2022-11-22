@@ -540,7 +540,7 @@ function add_css(target) {
 	append_styles(target, "svelte-vnjhax", ".label.svelte-vnjhax{font-size:12px;color:rgba(0, 0, 0, 0.5);font-variant:small-caps}.value.svelte-vnjhax{font-size:12px}.box.svelte-vnjhax{padding:10px;margin:10px;border:0.5px solid rgb(224, 224, 224);max-width:400px}#container.svelte-vnjhax{display:flex;flex-direction:row;flex-wrap:wrap}spectrogram canvas{z-index:0 !important}wave canvas{z-index:0 !important}wave{z-index:0 !important}");
 }
 
-// (36:4) {#if modelColumn && entry[modelColumn] !== undefined}
+// (38:4) {#if modelColumn && entry[modelColumn] !== undefined}
 function create_if_block(ctx) {
 	let br;
 	let t0;
@@ -664,16 +664,16 @@ function create_fragment(ctx) {
 			this.h();
 		},
 		h() {
-			if (!src_url_equal(source.src, source_src_value = /*transformColumn*/ ctx[3]
-			? `/cache/${/*transformColumn*/ ctx[3]}/${/*entry*/ ctx[0][/*transformColumn*/ ctx[3]]}`
-			: `/data/${/*entry*/ ctx[0][/*idColumn*/ ctx[4]]}`)) attr(source, "src", source_src_value);
+			if (!src_url_equal(source.src, source_src_value = /*transformColumn*/ ctx[4]
+			? `/cache/${/*transformColumn*/ ctx[4]}/${/*entry*/ ctx[0][/*transformColumn*/ ctx[4]]}`
+			: `${/*dataOrigin*/ ctx[3]}${/*entry*/ ctx[0][/*idColumn*/ ctx[5]]}`)) attr(source, "src", source_src_value);
 
-			attr(source, "type", source_type_value = "audio/" + /*entry*/ ctx[0][/*idColumn*/ ctx[4]].split(".").at(-1));
+			attr(source, "type", source_type_value = "audio/" + /*entry*/ ctx[0][/*idColumn*/ ctx[5]].split(".").at(-1));
 			audio.controls = true;
 
-			if (!src_url_equal(audio.src, audio_src_value = /*transformColumn*/ ctx[3]
-			? `/cache/${/*transformColumn*/ ctx[3]}/${/*entry*/ ctx[0][/*transformColumn*/ ctx[3]]}`
-			: `/data/${/*entry*/ ctx[0][/*idColumn*/ ctx[4]]}`)) attr(audio, "src", audio_src_value);
+			if (!src_url_equal(audio.src, audio_src_value = /*transformColumn*/ ctx[4]
+			? `/cache/${/*transformColumn*/ ctx[4]}/${/*entry*/ ctx[0][/*transformColumn*/ ctx[4]]}`
+			: `${/*dataOrigin*/ ctx[3]}${/*entry*/ ctx[0][/*idColumn*/ ctx[5]]}`)) attr(audio, "src", audio_src_value);
 
 			set_style(div0, "display", `flex`, false);
 			attr(span0, "class", "label svelte-vnjhax");
@@ -697,19 +697,19 @@ function create_fragment(ctx) {
 			if (if_block) if_block.m(div1, null);
 		},
 		p(ctx, [dirty]) {
-			if (dirty & /*transformColumn, entry, idColumn*/ 25 && !src_url_equal(source.src, source_src_value = /*transformColumn*/ ctx[3]
-			? `/cache/${/*transformColumn*/ ctx[3]}/${/*entry*/ ctx[0][/*transformColumn*/ ctx[3]]}`
-			: `/data/${/*entry*/ ctx[0][/*idColumn*/ ctx[4]]}`)) {
+			if (dirty & /*transformColumn, entry, dataOrigin, idColumn*/ 57 && !src_url_equal(source.src, source_src_value = /*transformColumn*/ ctx[4]
+			? `/cache/${/*transformColumn*/ ctx[4]}/${/*entry*/ ctx[0][/*transformColumn*/ ctx[4]]}`
+			: `${/*dataOrigin*/ ctx[3]}${/*entry*/ ctx[0][/*idColumn*/ ctx[5]]}`)) {
 				attr(source, "src", source_src_value);
 			}
 
-			if (dirty & /*entry, idColumn*/ 17 && source_type_value !== (source_type_value = "audio/" + /*entry*/ ctx[0][/*idColumn*/ ctx[4]].split(".").at(-1))) {
+			if (dirty & /*entry, idColumn*/ 33 && source_type_value !== (source_type_value = "audio/" + /*entry*/ ctx[0][/*idColumn*/ ctx[5]].split(".").at(-1))) {
 				attr(source, "type", source_type_value);
 			}
 
-			if (dirty & /*transformColumn, entry, idColumn*/ 25 && !src_url_equal(audio.src, audio_src_value = /*transformColumn*/ ctx[3]
-			? `/cache/${/*transformColumn*/ ctx[3]}/${/*entry*/ ctx[0][/*transformColumn*/ ctx[3]]}`
-			: `/data/${/*entry*/ ctx[0][/*idColumn*/ ctx[4]]}`)) {
+			if (dirty & /*transformColumn, entry, dataOrigin, idColumn*/ 57 && !src_url_equal(audio.src, audio_src_value = /*transformColumn*/ ctx[4]
+			? `/cache/${/*transformColumn*/ ctx[4]}/${/*entry*/ ctx[0][/*transformColumn*/ ctx[4]]}`
+			: `${/*dataOrigin*/ ctx[3]}${/*entry*/ ctx[0][/*idColumn*/ ctx[5]]}`)) {
 				attr(audio, "src", audio_src_value);
 			}
 
@@ -743,23 +743,26 @@ function instance($$self, $$props, $$invalidate) {
 	let { modelColumn } = $$props;
 	let { labelColumn } = $$props;
 	let { dataColumn } = $$props;
+	let { dataOrigin } = $$props;
 	let { transformColumn } = $$props;
 	let { idColumn } = $$props;
 
 	$$self.$$set = $$props => {
 		if ('entry' in $$props) $$invalidate(0, entry = $$props.entry);
-		if ('options' in $$props) $$invalidate(5, options = $$props.options);
+		if ('options' in $$props) $$invalidate(6, options = $$props.options);
 		if ('modelColumn' in $$props) $$invalidate(1, modelColumn = $$props.modelColumn);
 		if ('labelColumn' in $$props) $$invalidate(2, labelColumn = $$props.labelColumn);
-		if ('dataColumn' in $$props) $$invalidate(6, dataColumn = $$props.dataColumn);
-		if ('transformColumn' in $$props) $$invalidate(3, transformColumn = $$props.transformColumn);
-		if ('idColumn' in $$props) $$invalidate(4, idColumn = $$props.idColumn);
+		if ('dataColumn' in $$props) $$invalidate(7, dataColumn = $$props.dataColumn);
+		if ('dataOrigin' in $$props) $$invalidate(3, dataOrigin = $$props.dataOrigin);
+		if ('transformColumn' in $$props) $$invalidate(4, transformColumn = $$props.transformColumn);
+		if ('idColumn' in $$props) $$invalidate(5, idColumn = $$props.idColumn);
 	};
 
 	return [
 		entry,
 		modelColumn,
 		labelColumn,
+		dataOrigin,
 		transformColumn,
 		idColumn,
 		options,
@@ -779,12 +782,13 @@ class InstanceView extends SvelteComponent {
 			safe_not_equal,
 			{
 				entry: 0,
-				options: 5,
+				options: 6,
 				modelColumn: 1,
 				labelColumn: 2,
-				dataColumn: 6,
-				transformColumn: 3,
-				idColumn: 4
+				dataColumn: 7,
+				dataOrigin: 3,
+				transformColumn: 4,
+				idColumn: 5
 			},
 			add_css
 		);
@@ -798,6 +802,7 @@ function getInstance(
   modelColumn,
   labelColumn,
   dataColumn,
+  dataOrigin,
   transformColumn,
   idColumn
 ) {
@@ -809,6 +814,7 @@ function getInstance(
       modelColumn: modelColumn,
       labelColumn: labelColumn,
       dataColumn: dataColumn,
+      dataOrigin: dataOrigin,
       transformColumn: transformColumn,
       idColumn: idColumn,
     },
