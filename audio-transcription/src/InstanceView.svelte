@@ -7,6 +7,8 @@
   export let labelColumn;
   // Key for the input data.
   export let dataColumn;
+  // Path to fetch data from.
+  export let dataOrigin;
   // Key for the transformed data (current transform).
   export let transformColumn;
   // Key for unique identifier of each item.
@@ -20,12 +22,12 @@
         controls
         src={transformColumn
           ? `/cache/${transformColumn}/${entry[transformColumn]}`
-          : `/data/${entry[idColumn]}`}
+          : `${dataOrigin}${entry[idColumn]}`}
       >
         <source
           src={transformColumn
             ? `/cache/${transformColumn}/${entry[transformColumn]}`
-            : `/data/${entry[idColumn]}`}
+            : `${dataOrigin}${entry[idColumn]}`}
           type={"audio/" + entry[idColumn].split(".").at(-1)}
         />
       </audio>
