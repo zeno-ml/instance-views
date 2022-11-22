@@ -744,7 +744,7 @@ function add_css(target) {
 	append_styles(target, "svelte-7tn94s", "#overlays.svelte-7tn94s{position:relative}.overlay.svelte-7tn94s{filter:invert(100%) opacity(40%);left:0px;position:absolute}.box.svelte-7tn94s{padding:10px;margin:10px;border:0.5px solid rgb(224, 224, 224)}");
 }
 
-// (25:4) {#if viewOptions["mask"].includes("Label")}
+// (26:4) {#if viewOptions["mask"].includes("Label")}
 function create_if_block_1(ctx) {
 	let img;
 	let img_src_value;
@@ -784,7 +784,7 @@ function create_if_block_1(ctx) {
 	};
 }
 
-// (34:4) {#if entry[modelColumn] && viewOptions["mask"].includes("Model")}
+// (35:4) {#if entry[modelColumn] && viewOptions["mask"].includes("Model")}
 function create_if_block$2(ctx) {
 	let img;
 	let img_src_value;
@@ -863,8 +863,8 @@ function create_fragment$4(ctx) {
 			this.h();
 		},
 		h() {
-			if (!src_url_equal(img.src, img_src_value = "/data/" + /*entry*/ ctx[0][/*idColumn*/ ctx[4]])) attr(img, "src", img_src_value);
-			attr(img, "alt", img_alt_value = "Image thumbnail for instance " + /*entry*/ ctx[0][/*idColumn*/ ctx[4]]);
+			if (!src_url_equal(img.src, img_src_value = "" + (/*dataOrigin*/ ctx[4] + /*entry*/ ctx[0][/*idColumn*/ ctx[5]]))) attr(img, "src", img_src_value);
+			attr(img, "alt", img_alt_value = "Image thumbnail for instance " + /*entry*/ ctx[0][/*idColumn*/ ctx[5]]);
 			set_style(img, "width", `150px`, false);
 			set_style(img, "height", `150px`, false);
 			attr(div0, "id", "overlays");
@@ -881,11 +881,11 @@ function create_fragment$4(ctx) {
 			if (if_block1) if_block1.m(div0, null);
 		},
 		p(ctx, [dirty]) {
-			if (dirty & /*entry, idColumn*/ 17 && !src_url_equal(img.src, img_src_value = "/data/" + /*entry*/ ctx[0][/*idColumn*/ ctx[4]])) {
+			if (dirty & /*dataOrigin, entry, idColumn*/ 49 && !src_url_equal(img.src, img_src_value = "" + (/*dataOrigin*/ ctx[4] + /*entry*/ ctx[0][/*idColumn*/ ctx[5]]))) {
 				attr(img, "src", img_src_value);
 			}
 
-			if (dirty & /*entry, idColumn*/ 17 && img_alt_value !== (img_alt_value = "Image thumbnail for instance " + /*entry*/ ctx[0][/*idColumn*/ ctx[4]])) {
+			if (dirty & /*entry, idColumn*/ 33 && img_alt_value !== (img_alt_value = "Image thumbnail for instance " + /*entry*/ ctx[0][/*idColumn*/ ctx[5]])) {
 				attr(img, "alt", img_alt_value);
 			}
 
@@ -935,6 +935,7 @@ function instance$4($$self, $$props, $$invalidate) {
 	let { modelColumn } = $$props;
 	let { labelColumn } = $$props;
 	let { dataColumn } = $$props;
+	let { dataOrigin } = $$props;
 	let { transformColumn } = $$props;
 	let { idColumn } = $$props;
 
@@ -943,9 +944,10 @@ function instance$4($$self, $$props, $$invalidate) {
 		if ('viewOptions' in $$props) $$invalidate(1, viewOptions = $$props.viewOptions);
 		if ('modelColumn' in $$props) $$invalidate(2, modelColumn = $$props.modelColumn);
 		if ('labelColumn' in $$props) $$invalidate(3, labelColumn = $$props.labelColumn);
-		if ('dataColumn' in $$props) $$invalidate(5, dataColumn = $$props.dataColumn);
-		if ('transformColumn' in $$props) $$invalidate(6, transformColumn = $$props.transformColumn);
-		if ('idColumn' in $$props) $$invalidate(4, idColumn = $$props.idColumn);
+		if ('dataColumn' in $$props) $$invalidate(6, dataColumn = $$props.dataColumn);
+		if ('dataOrigin' in $$props) $$invalidate(4, dataOrigin = $$props.dataOrigin);
+		if ('transformColumn' in $$props) $$invalidate(7, transformColumn = $$props.transformColumn);
+		if ('idColumn' in $$props) $$invalidate(5, idColumn = $$props.idColumn);
 	};
 
 	return [
@@ -953,6 +955,7 @@ function instance$4($$self, $$props, $$invalidate) {
 		viewOptions,
 		modelColumn,
 		labelColumn,
+		dataOrigin,
 		idColumn,
 		dataColumn,
 		transformColumn
@@ -974,9 +977,10 @@ class InstanceView extends SvelteComponent {
 				viewOptions: 1,
 				modelColumn: 2,
 				labelColumn: 3,
-				dataColumn: 5,
-				transformColumn: 6,
-				idColumn: 4
+				dataColumn: 6,
+				dataOrigin: 4,
+				transformColumn: 7,
+				idColumn: 5
 			},
 			add_css
 		);
@@ -3912,6 +3916,7 @@ function getInstance(
   modelColumn,
   labelColumn,
   dataColumn,
+  dataOrigin,
   transformColumn,
   idColumn
 ) {
@@ -3923,6 +3928,7 @@ function getInstance(
       modelColumn: modelColumn,
       labelColumn: labelColumn,
       dataColumn: dataColumn,
+      dataOrigin: dataOrigin,
       transformColumn: transformColumn,
       idColumn: idColumn,
     },

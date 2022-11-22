@@ -7,6 +7,7 @@ export function getInstance(
   modelColumn,
   labelColumn,
   dataColumn,
+  dataOrigin,
   transformColumn,
   idColumn
 ) {
@@ -18,6 +19,7 @@ export function getInstance(
       modelColumn: modelColumn,
       labelColumn: labelColumn,
       dataColumn: dataColumn,
+      dataOrigin: dataOrigin,
       transformColumn: transformColumn,
       idColumn: idColumn,
     },

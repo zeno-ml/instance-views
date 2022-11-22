@@ -8,6 +8,7 @@
   export let labelColumn;
   // Key for the input data.
   export let dataColumn;
+  export let dataOrigin;
   // Key for the transformed data (current transform).
   export let transformColumn;
   // Key for unique identifier of each item.
@@ -17,7 +18,7 @@
 <div class="box">
   <div id="overlays">
     <img
-      src="/data/{entry[idColumn]}"
+      src="{dataOrigin}{entry[idColumn]}"
       style:width="150px"
       style:height="150px"
       alt="Image thumbnail for instance {entry[idColumn]}"

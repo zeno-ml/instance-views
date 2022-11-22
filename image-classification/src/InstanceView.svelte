@@ -4,13 +4,14 @@
   export let modelColumn;
   export let labelColumn;
   export let dataColumn;
+  export let dataOrigin;
   export let transformColumn;
   export let idColumn;
 </script>
 
 <div class="box" style:background-color="white">
   <img
-    src="/data/{entry[idColumn]}"
+    src="{dataOrigin}{entry[idColumn]}"
     style:max-width="200px"
     alt="Image thumbnail for instance {entry[idColumn]}"
   />

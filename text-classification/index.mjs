@@ -517,7 +517,7 @@ function add_css(target) {
 	append_styles(target, "svelte-1g1ctpu", ".label.svelte-1g1ctpu{font-size:12px;color:rgba(0, 0, 0, 0.5);font-variant:small-caps}.value.svelte-1g1ctpu{font-size:12px}.box.svelte-1g1ctpu{padding:10px;margin:10px;border:0.5px solid rgb(224, 224, 224)}");
 }
 
-// (23:2) {#if modelColumn && entry[modelColumn] !== undefined}
+// (24:2) {#if modelColumn && entry[modelColumn] !== undefined}
 function create_if_block(ctx) {
 	let br;
 	let t0;
@@ -685,6 +685,7 @@ function instance($$self, $$props, $$invalidate) {
 	let { modelColumn } = $$props;
 	let { labelColumn } = $$props;
 	let { dataColumn } = $$props;
+	let { dataOrigin } = $$props;
 	let { transformColumn } = $$props;
 	let { idColumn } = $$props;
 
@@ -694,8 +695,9 @@ function instance($$self, $$props, $$invalidate) {
 		if ('modelColumn' in $$props) $$invalidate(1, modelColumn = $$props.modelColumn);
 		if ('labelColumn' in $$props) $$invalidate(2, labelColumn = $$props.labelColumn);
 		if ('dataColumn' in $$props) $$invalidate(3, dataColumn = $$props.dataColumn);
-		if ('transformColumn' in $$props) $$invalidate(5, transformColumn = $$props.transformColumn);
-		if ('idColumn' in $$props) $$invalidate(6, idColumn = $$props.idColumn);
+		if ('dataOrigin' in $$props) $$invalidate(5, dataOrigin = $$props.dataOrigin);
+		if ('transformColumn' in $$props) $$invalidate(6, transformColumn = $$props.transformColumn);
+		if ('idColumn' in $$props) $$invalidate(7, idColumn = $$props.idColumn);
 	};
 
 	return [
@@ -704,6 +706,7 @@ function instance($$self, $$props, $$invalidate) {
 		labelColumn,
 		dataColumn,
 		options,
+		dataOrigin,
 		transformColumn,
 		idColumn
 	];
@@ -725,8 +728,9 @@ class InstanceView extends SvelteComponent {
 				modelColumn: 1,
 				labelColumn: 2,
 				dataColumn: 3,
-				transformColumn: 5,
-				idColumn: 6
+				dataOrigin: 5,
+				transformColumn: 6,
+				idColumn: 7
 			},
 			add_css
 		);
@@ -740,6 +744,7 @@ function getInstance(
   modelColumn,
   labelColumn,
   dataColumn,
+  dataOrigin,
   transformColumn,
   idColumn
 ) {
@@ -751,6 +756,7 @@ function getInstance(
       modelColumn: modelColumn,
       labelColumn: labelColumn,
       dataColumn: dataColumn,
+      dataOrigin: dataOrigin,
       transformColumn: transformColumn,
       idColumn: idColumn,
     },
@@ -758,4 +764,4 @@ function getInstance(
   });
 }
 
-export { InstanceView, getInstance };
+export { getInstance };

@@ -12,6 +12,7 @@
   export let labelColumn;
   // Key for the input data.
   export let dataColumn;
+  export let dataOrigin;
   // Key for the transformed data (current transform).
   export let transformColumn;
   // Key for unique identifier of each item.
@@ -32,7 +33,7 @@
   ];
 
   onMount(() => {
-    csv("/data/" + entry[dataColumn]).then((data) => {
+    csv(dataOrigin + entry[dataColumn]).then((data) => {
       let dat = [];
       let series = [];
       [...Object.keys(data[0])].forEach((key, i) => {

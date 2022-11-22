@@ -9,6 +9,8 @@
   export let labelColumn;
   // Key for the input data.
   export let dataColumn;
+  // Path or URL from witch to fetch data.
+  export let dataOrigin;
   // Key for the transformed data (current transform).
   export let transformColumn;
   // Key for unique identifier of each item.

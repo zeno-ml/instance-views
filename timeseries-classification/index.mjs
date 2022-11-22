@@ -6095,7 +6095,7 @@ function create_fragment(ctx) {
 		},
 		m(target, anchor) {
 			insert_hydration(target, div_1, anchor);
-			/*div_1_binding*/ ctx[7](div_1);
+			/*div_1_binding*/ ctx[8](div_1);
 			insert_hydration(target, t, anchor);
 			append_hydration(document.head, link);
 		},
@@ -6104,7 +6104,7 @@ function create_fragment(ctx) {
 		o: noop,
 		d(detaching) {
 			if (detaching) detach(div_1);
-			/*div_1_binding*/ ctx[7](null);
+			/*div_1_binding*/ ctx[8](null);
 			if (detaching) detach(t);
 			detach(link);
 		}
@@ -6116,6 +6116,7 @@ function instance($$self, $$props, $$invalidate) {
 	let { modelColumn } = $$props;
 	let { labelColumn } = $$props;
 	let { dataColumn } = $$props;
+	let { dataOrigin } = $$props;
 	let { transformColumn } = $$props;
 	let { idColumn } = $$props;
 	let div;
@@ -6133,7 +6134,7 @@ function instance($$self, $$props, $$invalidate) {
 	];
 
 	onMount(() => {
-		csv("/data/" + entry[dataColumn]).then(data => {
+		csv(dataOrigin + entry[dataColumn]).then(data => {
 			let dat = [];
 			let series = [];
 
@@ -6178,8 +6179,9 @@ function instance($$self, $$props, $$invalidate) {
 		if ('modelColumn' in $$props) $$invalidate(2, modelColumn = $$props.modelColumn);
 		if ('labelColumn' in $$props) $$invalidate(3, labelColumn = $$props.labelColumn);
 		if ('dataColumn' in $$props) $$invalidate(4, dataColumn = $$props.dataColumn);
-		if ('transformColumn' in $$props) $$invalidate(5, transformColumn = $$props.transformColumn);
-		if ('idColumn' in $$props) $$invalidate(6, idColumn = $$props.idColumn);
+		if ('dataOrigin' in $$props) $$invalidate(5, dataOrigin = $$props.dataOrigin);
+		if ('transformColumn' in $$props) $$invalidate(6, transformColumn = $$props.transformColumn);
+		if ('idColumn' in $$props) $$invalidate(7, idColumn = $$props.idColumn);
 	};
 
 	return [
@@ -6188,6 +6190,7 @@ function instance($$self, $$props, $$invalidate) {
 		modelColumn,
 		labelColumn,
 		dataColumn,
+		dataOrigin,
 		transformColumn,
 		idColumn,
 		div_1_binding
@@ -6203,8 +6206,9 @@ class InstanceView extends SvelteComponent {
 			modelColumn: 2,
 			labelColumn: 3,
 			dataColumn: 4,
-			transformColumn: 5,
-			idColumn: 6
+			dataOrigin: 5,
+			transformColumn: 6,
+			idColumn: 7
 		});
 	}
 }
@@ -6216,6 +6220,7 @@ function getInstance(
   modelColumn,
   labelColumn,
   dataColumn,
+  dataOrigin,
   transformColumn,
   idColumn
 ) {
@@ -6227,6 +6232,7 @@ function getInstance(
       modelColumn: modelColumn,
       labelColumn: labelColumn,
       dataColumn: dataColumn,
+      dataOrigin: dataOrigin,
       transformColumn: transformColumn,
       idColumn: idColumn,
     },

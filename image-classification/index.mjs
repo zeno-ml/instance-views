@@ -533,7 +533,7 @@ function add_css(target) {
 	append_styles(target, "svelte-1brkrke", ".label.svelte-1brkrke{font-size:10px;color:rgba(0, 0, 0, 0.5);font-variant:small-caps}.value.svelte-1brkrke{font-size:10px}.box.svelte-1brkrke{padding:10px;margin:10px;border:0.5px solid rgb(224, 224, 224)}");
 }
 
-// (19:2) {#if transformColumn}
+// (18:2) {#if transformColumn}
 function create_if_block_1(ctx) {
 	let img;
 	let img_src_value;
@@ -549,19 +549,19 @@ function create_if_block_1(ctx) {
 			this.h();
 		},
 		h() {
-			if (!src_url_equal(img.src, img_src_value = `/cache/${/*transformColumn*/ ctx[3]}/${/*entry*/ ctx[0][/*transformColumn*/ ctx[3]]}`)) attr(img, "src", img_src_value);
-			attr(img, "alt", img_alt_value = "Image thumbnail for instance " + /*entry*/ ctx[0][/*transformColumn*/ ctx[3]]);
+			if (!src_url_equal(img.src, img_src_value = `/cache/${/*transformColumn*/ ctx[4]}/${/*entry*/ ctx[0][/*transformColumn*/ ctx[4]]}`)) attr(img, "src", img_src_value);
+			attr(img, "alt", img_alt_value = "Image thumbnail for instance " + /*entry*/ ctx[0][/*transformColumn*/ ctx[4]]);
 			set_style(img, "max-width", `200px`, false);
 		},
 		m(target, anchor) {
 			insert_hydration(target, img, anchor);
 		},
 		p(ctx, dirty) {
-			if (dirty & /*transformColumn, entry*/ 9 && !src_url_equal(img.src, img_src_value = `/cache/${/*transformColumn*/ ctx[3]}/${/*entry*/ ctx[0][/*transformColumn*/ ctx[3]]}`)) {
+			if (dirty & /*transformColumn, entry*/ 17 && !src_url_equal(img.src, img_src_value = `/cache/${/*transformColumn*/ ctx[4]}/${/*entry*/ ctx[0][/*transformColumn*/ ctx[4]]}`)) {
 				attr(img, "src", img_src_value);
 			}
 
-			if (dirty & /*entry, transformColumn*/ 9 && img_alt_value !== (img_alt_value = "Image thumbnail for instance " + /*entry*/ ctx[0][/*transformColumn*/ ctx[3]])) {
+			if (dirty & /*entry, transformColumn*/ 17 && img_alt_value !== (img_alt_value = "Image thumbnail for instance " + /*entry*/ ctx[0][/*transformColumn*/ ctx[4]])) {
 				attr(img, "alt", img_alt_value);
 			}
 		},
@@ -571,7 +571,7 @@ function create_if_block_1(ctx) {
 	};
 }
 
-// (30:2) {#if modelColumn && entry[modelColumn]}
+// (29:2) {#if modelColumn && entry[modelColumn]}
 function create_if_block(ctx) {
 	let br;
 	let t0;
@@ -648,7 +648,7 @@ function create_fragment(ctx) {
 	let t4_value = /*entry*/ ctx[0][/*labelColumn*/ ctx[2]] + "";
 	let t4;
 	let t5;
-	let if_block0 = /*transformColumn*/ ctx[3] && create_if_block_1(ctx);
+	let if_block0 = /*transformColumn*/ ctx[4] && create_if_block_1(ctx);
 	let if_block1 = /*modelColumn*/ ctx[1] && /*entry*/ ctx[0][/*modelColumn*/ ctx[1]] && create_if_block(ctx);
 
 	return {
@@ -691,13 +691,13 @@ function create_fragment(ctx) {
 			this.h();
 		},
 		h() {
-			if (!src_url_equal(img.src, img_src_value = "/data/" + /*entry*/ ctx[0][/*idColumn*/ ctx[4]])) attr(img, "src", img_src_value);
-			attr(img, "alt", img_alt_value = "Image thumbnail for instance " + /*entry*/ ctx[0][/*idColumn*/ ctx[4]]);
+			if (!src_url_equal(img.src, img_src_value = "" + (/*dataOrigin*/ ctx[3] + /*entry*/ ctx[0][/*idColumn*/ ctx[5]]))) attr(img, "src", img_src_value);
+			attr(img, "alt", img_alt_value = "Image thumbnail for instance " + /*entry*/ ctx[0][/*idColumn*/ ctx[5]]);
 			set_style(img, "max-width", `200px`, false);
 			attr(span0, "class", "label svelte-1brkrke");
 			attr(span1, "class", "value svelte-1brkrke");
 			attr(div, "class", "box svelte-1brkrke");
-			set_style(div, "background-color", color, false);
+			set_style(div, "background-color", `white`, false);
 		},
 		m(target, anchor) {
 			insert_hydration(target, div, anchor);
@@ -715,15 +715,15 @@ function create_fragment(ctx) {
 			if (if_block1) if_block1.m(div, null);
 		},
 		p(ctx, [dirty]) {
-			if (dirty & /*entry, idColumn*/ 17 && !src_url_equal(img.src, img_src_value = "/data/" + /*entry*/ ctx[0][/*idColumn*/ ctx[4]])) {
+			if (dirty & /*dataOrigin, entry, idColumn*/ 41 && !src_url_equal(img.src, img_src_value = "" + (/*dataOrigin*/ ctx[3] + /*entry*/ ctx[0][/*idColumn*/ ctx[5]]))) {
 				attr(img, "src", img_src_value);
 			}
 
-			if (dirty & /*entry, idColumn*/ 17 && img_alt_value !== (img_alt_value = "Image thumbnail for instance " + /*entry*/ ctx[0][/*idColumn*/ ctx[4]])) {
+			if (dirty & /*entry, idColumn*/ 33 && img_alt_value !== (img_alt_value = "Image thumbnail for instance " + /*entry*/ ctx[0][/*idColumn*/ ctx[5]])) {
 				attr(img, "alt", img_alt_value);
 			}
 
-			if (/*transformColumn*/ ctx[3]) {
+			if (/*transformColumn*/ ctx[4]) {
 				if (if_block0) {
 					if_block0.p(ctx, dirty);
 				} else {
@@ -761,31 +761,32 @@ function create_fragment(ctx) {
 	};
 }
 
-let color = "white";
-
 function instance($$self, $$props, $$invalidate) {
 	let { entry } = $$props;
 	let { options } = $$props;
 	let { modelColumn } = $$props;
 	let { labelColumn } = $$props;
 	let { dataColumn } = $$props;
+	let { dataOrigin } = $$props;
 	let { transformColumn } = $$props;
 	let { idColumn } = $$props;
 
 	$$self.$$set = $$props => {
 		if ('entry' in $$props) $$invalidate(0, entry = $$props.entry);
-		if ('options' in $$props) $$invalidate(5, options = $$props.options);
+		if ('options' in $$props) $$invalidate(6, options = $$props.options);
 		if ('modelColumn' in $$props) $$invalidate(1, modelColumn = $$props.modelColumn);
 		if ('labelColumn' in $$props) $$invalidate(2, labelColumn = $$props.labelColumn);
-		if ('dataColumn' in $$props) $$invalidate(6, dataColumn = $$props.dataColumn);
-		if ('transformColumn' in $$props) $$invalidate(3, transformColumn = $$props.transformColumn);
-		if ('idColumn' in $$props) $$invalidate(4, idColumn = $$props.idColumn);
+		if ('dataColumn' in $$props) $$invalidate(7, dataColumn = $$props.dataColumn);
+		if ('dataOrigin' in $$props) $$invalidate(3, dataOrigin = $$props.dataOrigin);
+		if ('transformColumn' in $$props) $$invalidate(4, transformColumn = $$props.transformColumn);
+		if ('idColumn' in $$props) $$invalidate(5, idColumn = $$props.idColumn);
 	};
 
 	return [
 		entry,
 		modelColumn,
 		labelColumn,
+		dataOrigin,
 		transformColumn,
 		idColumn,
 		options,
@@ -805,12 +806,13 @@ class InstanceView extends SvelteComponent {
 			safe_not_equal,
 			{
 				entry: 0,
-				options: 5,
+				options: 6,
 				modelColumn: 1,
 				labelColumn: 2,
-				dataColumn: 6,
-				transformColumn: 3,
-				idColumn: 4
+				dataColumn: 7,
+				dataOrigin: 3,
+				transformColumn: 4,
+				idColumn: 5
 			},
 			add_css
 		);
@@ -824,6 +826,7 @@ function getInstance(
   modelColumn,
   labelColumn,
   dataColumn,
+  dataOrigin,
   transformColumn,
   idColumn
 ) {
@@ -835,6 +838,7 @@ function getInstance(
       modelColumn: modelColumn,
       labelColumn: labelColumn,
       dataColumn: dataColumn,
+      dataOrigin: dataOrigin,
       transformColumn: transformColumn,
       idColumn: idColumn,
     },
