@@ -23,13 +23,16 @@
     />
   {/if}
   <br />
-  <span class="label">label: </span><span class="value">
-    {entry[labelColumn]}
-  </span>
+  <div>
+    <span class="label">label: </span><span class="value">
+      {entry[labelColumn]}
+    </span>
+  </div>
   {#if modelColumn && entry[modelColumn]}
-    <br />
-    <span class="label">output: </span>
-    <span class="value">{entry[modelColumn]} </span>
+    <div>
+      <span class="label">output: </span>
+      <span class="value">{entry[modelColumn]} </span>
+    </div>
   {/if}
 </div>
 
@@ -43,6 +46,8 @@
     font-size: 10px;
   }
   .box {
+    width: min-content;
+    min-width: 50px;
     padding: 10px;
     margin: 10px;
     border: 0.5px solid rgb(224, 224, 224);
