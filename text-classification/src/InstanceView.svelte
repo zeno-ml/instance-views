@@ -39,7 +39,6 @@
   }
   .box {
     padding: 10px;
-    margin: 10px;
     border: 0.5px solid rgb(224, 224, 224);
   }
 </style>
