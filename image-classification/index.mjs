@@ -533,45 +533,7 @@ function add_css(target) {
 	append_styles(target, "svelte-8lajst", ".label.svelte-8lajst{margin-right:5px;font-size:10px;color:rgba(0, 0, 0, 0.5);font-variant:small-caps}.text.svelte-8lajst{display:flex;flex-direction:row}.value.svelte-8lajst{font-size:10px}.box.svelte-8lajst{width:min-content;padding:5px;border:0.5px solid rgb(224, 224, 224)}");
 }
 
-// (18:2) {#if transformColumn}
-function create_if_block_1(ctx) {
-	let img;
-	let img_src_value;
-	let img_alt_value;
-
-	return {
-		c() {
-			img = element("img");
-			this.h();
-		},
-		l(nodes) {
-			img = claim_element(nodes, "IMG", { src: true, alt: true });
-			this.h();
-		},
-		h() {
-			if (!src_url_equal(img.src, img_src_value = `/cache/${/*transformColumn*/ ctx[4]}/${/*entry*/ ctx[0][/*transformColumn*/ ctx[4]]}`)) attr(img, "src", img_src_value);
-			attr(img, "alt", img_alt_value = "Image thumbnail for instance " + /*entry*/ ctx[0][/*transformColumn*/ ctx[4]]);
-			set_style(img, "max-width", `200px`, false);
-		},
-		m(target, anchor) {
-			insert_hydration(target, img, anchor);
-		},
-		p(ctx, dirty) {
-			if (dirty & /*transformColumn, entry*/ 17 && !src_url_equal(img.src, img_src_value = `/cache/${/*transformColumn*/ ctx[4]}/${/*entry*/ ctx[0][/*transformColumn*/ ctx[4]]}`)) {
-				attr(img, "src", img_src_value);
-			}
-
-			if (dirty & /*entry, transformColumn*/ 17 && img_alt_value !== (img_alt_value = "Image thumbnail for instance " + /*entry*/ ctx[0][/*transformColumn*/ ctx[4]])) {
-				attr(img, "alt", img_alt_value);
-			}
-		},
-		d(detaching) {
-			if (detaching) detach(img);
-		}
-	};
-}
-
-// (30:2) {#if modelColumn && entry[modelColumn]}
+// (22:2) {#if modelColumn && entry[modelColumn]}
 function create_if_block(ctx) {
 	let div;
 	let span0;
@@ -634,37 +596,33 @@ function create_fragment(ctx) {
 	let img_src_value;
 	let img_alt_value;
 	let t0;
-	let t1;
 	let br;
-	let t2;
+	let t1;
 	let div0;
 	let span0;
+	let t2;
 	let t3;
-	let t4;
 	let span1;
-	let t5_value = /*entry*/ ctx[0][/*labelColumn*/ ctx[2]] + "";
+	let t4_value = /*entry*/ ctx[0][/*labelColumn*/ ctx[2]] + "";
+	let t4;
 	let t5;
-	let t6;
-	let if_block0 = /*transformColumn*/ ctx[4] && create_if_block_1(ctx);
-	let if_block1 = /*modelColumn*/ ctx[1] && /*entry*/ ctx[0][/*modelColumn*/ ctx[1]] && create_if_block(ctx);
+	let if_block = /*modelColumn*/ ctx[1] && /*entry*/ ctx[0][/*modelColumn*/ ctx[1]] && create_if_block(ctx);
 
 	return {
 		c() {
 			div1 = element("div");
 			img = element("img");
 			t0 = space();
-			if (if_block0) if_block0.c();
-			t1 = space();
 			br = element("br");
-			t2 = space();
+			t1 = space();
 			div0 = element("div");
 			span0 = element("span");
-			t3 = text("label:");
-			t4 = space();
+			t2 = text("label:");
+			t3 = space();
 			span1 = element("span");
-			t5 = text(t5_value);
-			t6 = space();
-			if (if_block1) if_block1.c();
+			t4 = text(t4_value);
+			t5 = space();
+			if (if_block) if_block.c();
 			this.h();
 		},
 		l(nodes) {
@@ -672,30 +630,28 @@ function create_fragment(ctx) {
 			var div1_nodes = children(div1);
 			img = claim_element(div1_nodes, "IMG", { src: true, alt: true });
 			t0 = claim_space(div1_nodes);
-			if (if_block0) if_block0.l(div1_nodes);
-			t1 = claim_space(div1_nodes);
 			br = claim_element(div1_nodes, "BR", {});
-			t2 = claim_space(div1_nodes);
+			t1 = claim_space(div1_nodes);
 			div0 = claim_element(div1_nodes, "DIV", { class: true });
 			var div0_nodes = children(div0);
 			span0 = claim_element(div0_nodes, "SPAN", { class: true });
 			var span0_nodes = children(span0);
-			t3 = claim_text(span0_nodes, "label:");
+			t2 = claim_text(span0_nodes, "label:");
 			span0_nodes.forEach(detach);
-			t4 = claim_space(div0_nodes);
+			t3 = claim_space(div0_nodes);
 			span1 = claim_element(div0_nodes, "SPAN", { class: true });
 			var span1_nodes = children(span1);
-			t5 = claim_text(span1_nodes, t5_value);
+			t4 = claim_text(span1_nodes, t4_value);
 			span1_nodes.forEach(detach);
 			div0_nodes.forEach(detach);
-			t6 = claim_space(div1_nodes);
-			if (if_block1) if_block1.l(div1_nodes);
+			t5 = claim_space(div1_nodes);
+			if (if_block) if_block.l(div1_nodes);
 			div1_nodes.forEach(detach);
 			this.h();
 		},
 		h() {
-			if (!src_url_equal(img.src, img_src_value = "" + (/*dataOrigin*/ ctx[3] + /*entry*/ ctx[0][/*idColumn*/ ctx[5]]))) attr(img, "src", img_src_value);
-			attr(img, "alt", img_alt_value = "Image thumbnail for instance " + /*entry*/ ctx[0][/*idColumn*/ ctx[5]]);
+			if (!src_url_equal(img.src, img_src_value = "" + (/*dataOrigin*/ ctx[3] + /*entry*/ ctx[0][/*idColumn*/ ctx[4]]))) attr(img, "src", img_src_value);
+			attr(img, "alt", img_alt_value = "Image thumbnail for instance " + /*entry*/ ctx[0][/*idColumn*/ ctx[4]]);
 			set_style(img, "max-width", `200px`, false);
 			attr(span0, "class", "label svelte-8lajst");
 			attr(span1, "class", "value svelte-8lajst");
@@ -707,62 +663,46 @@ function create_fragment(ctx) {
 			insert_hydration(target, div1, anchor);
 			append_hydration(div1, img);
 			append_hydration(div1, t0);
-			if (if_block0) if_block0.m(div1, null);
-			append_hydration(div1, t1);
 			append_hydration(div1, br);
-			append_hydration(div1, t2);
+			append_hydration(div1, t1);
 			append_hydration(div1, div0);
 			append_hydration(div0, span0);
-			append_hydration(span0, t3);
-			append_hydration(div0, t4);
+			append_hydration(span0, t2);
+			append_hydration(div0, t3);
 			append_hydration(div0, span1);
-			append_hydration(span1, t5);
-			append_hydration(div1, t6);
-			if (if_block1) if_block1.m(div1, null);
+			append_hydration(span1, t4);
+			append_hydration(div1, t5);
+			if (if_block) if_block.m(div1, null);
 		},
 		p(ctx, [dirty]) {
-			if (dirty & /*dataOrigin, entry, idColumn*/ 41 && !src_url_equal(img.src, img_src_value = "" + (/*dataOrigin*/ ctx[3] + /*entry*/ ctx[0][/*idColumn*/ ctx[5]]))) {
+			if (dirty & /*dataOrigin, entry, idColumn*/ 25 && !src_url_equal(img.src, img_src_value = "" + (/*dataOrigin*/ ctx[3] + /*entry*/ ctx[0][/*idColumn*/ ctx[4]]))) {
 				attr(img, "src", img_src_value);
 			}
 
-			if (dirty & /*entry, idColumn*/ 33 && img_alt_value !== (img_alt_value = "Image thumbnail for instance " + /*entry*/ ctx[0][/*idColumn*/ ctx[5]])) {
+			if (dirty & /*entry, idColumn*/ 17 && img_alt_value !== (img_alt_value = "Image thumbnail for instance " + /*entry*/ ctx[0][/*idColumn*/ ctx[4]])) {
 				attr(img, "alt", img_alt_value);
 			}
 
-			if (/*transformColumn*/ ctx[4]) {
-				if (if_block0) {
-					if_block0.p(ctx, dirty);
-				} else {
-					if_block0 = create_if_block_1(ctx);
-					if_block0.c();
-					if_block0.m(div1, t1);
-				}
-			} else if (if_block0) {
-				if_block0.d(1);
-				if_block0 = null;
-			}
-
-			if (dirty & /*entry, labelColumn*/ 5 && t5_value !== (t5_value = /*entry*/ ctx[0][/*labelColumn*/ ctx[2]] + "")) set_data(t5, t5_value);
+			if (dirty & /*entry, labelColumn*/ 5 && t4_value !== (t4_value = /*entry*/ ctx[0][/*labelColumn*/ ctx[2]] + "")) set_data(t4, t4_value);
 
 			if (/*modelColumn*/ ctx[1] && /*entry*/ ctx[0][/*modelColumn*/ ctx[1]]) {
-				if (if_block1) {
-					if_block1.p(ctx, dirty);
+				if (if_block) {
+					if_block.p(ctx, dirty);
 				} else {
-					if_block1 = create_if_block(ctx);
-					if_block1.c();
-					if_block1.m(div1, null);
+					if_block = create_if_block(ctx);
+					if_block.c();
+					if_block.m(div1, null);
 				}
-			} else if (if_block1) {
-				if_block1.d(1);
-				if_block1 = null;
+			} else if (if_block) {
+				if_block.d(1);
+				if_block = null;
 			}
 		},
 		i: noop,
 		o: noop,
 		d(detaching) {
 			if (detaching) detach(div1);
-			if (if_block0) if_block0.d();
-			if (if_block1) if_block1.d();
+			if (if_block) if_block.d();
 		}
 	};
 }
@@ -774,30 +714,19 @@ function instance($$self, $$props, $$invalidate) {
 	let { labelColumn } = $$props;
 	let { dataColumn } = $$props;
 	let { dataOrigin } = $$props;
-	let { transformColumn } = $$props;
 	let { idColumn } = $$props;
 
 	$$self.$$set = $$props => {
 		if ('entry' in $$props) $$invalidate(0, entry = $$props.entry);
-		if ('options' in $$props) $$invalidate(6, options = $$props.options);
+		if ('options' in $$props) $$invalidate(5, options = $$props.options);
 		if ('modelColumn' in $$props) $$invalidate(1, modelColumn = $$props.modelColumn);
 		if ('labelColumn' in $$props) $$invalidate(2, labelColumn = $$props.labelColumn);
-		if ('dataColumn' in $$props) $$invalidate(7, dataColumn = $$props.dataColumn);
+		if ('dataColumn' in $$props) $$invalidate(6, dataColumn = $$props.dataColumn);
 		if ('dataOrigin' in $$props) $$invalidate(3, dataOrigin = $$props.dataOrigin);
-		if ('transformColumn' in $$props) $$invalidate(4, transformColumn = $$props.transformColumn);
-		if ('idColumn' in $$props) $$invalidate(5, idColumn = $$props.idColumn);
+		if ('idColumn' in $$props) $$invalidate(4, idColumn = $$props.idColumn);
 	};
 
-	return [
-		entry,
-		modelColumn,
-		labelColumn,
-		dataOrigin,
-		transformColumn,
-		idColumn,
-		options,
-		dataColumn
-	];
+	return [entry, modelColumn, labelColumn, dataOrigin, idColumn, options, dataColumn];
 }
 
 class InstanceView extends SvelteComponent {
@@ -812,13 +741,12 @@ class InstanceView extends SvelteComponent {
 			safe_not_equal,
 			{
 				entry: 0,
-				options: 6,
+				options: 5,
 				modelColumn: 1,
 				labelColumn: 2,
-				dataColumn: 7,
+				dataColumn: 6,
 				dataOrigin: 3,
-				transformColumn: 4,
-				idColumn: 5
+				idColumn: 4
 			},
 			add_css
 		);
@@ -833,7 +761,6 @@ function getInstance(
   labelColumn,
   dataColumn,
   dataOrigin,
-  transformColumn,
   idColumn
 ) {
   new InstanceView({
@@ -845,7 +772,6 @@ function getInstance(
       labelColumn: labelColumn,
       dataColumn: dataColumn,
       dataOrigin: dataOrigin,
-      transformColumn: transformColumn,
       idColumn: idColumn,
     },
     hydrate: true,

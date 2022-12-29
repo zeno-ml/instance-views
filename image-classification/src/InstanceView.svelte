@@ -5,7 +5,6 @@
   export let labelColumn;
   export let dataColumn;
   export let dataOrigin;
-  export let transformColumn;
   export let idColumn;
 </script>
 
@@ -15,13 +14,6 @@
     style:max-width="200px"
     alt="Image thumbnail for instance {entry[idColumn]}"
   />
-  {#if transformColumn}
-    <img
-      src={`/cache/${transformColumn}/${entry[transformColumn]}`}
-      style:max-width="200px"
-      alt="Image thumbnail for instance {entry[transformColumn]}"
-    />
-  {/if}
   <br />
   <div class="text">
     <span class="label">label: </span>

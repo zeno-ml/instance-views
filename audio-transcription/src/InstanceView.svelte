@@ -9,8 +9,6 @@
   export let dataColumn;
   // Path to fetch data from.
   export let dataOrigin;
-  // Key for the transformed data (current transform).
-  export let transformColumn;
   // Key for unique identifier of each item.
   export let idColumn;
 </script>
@@ -18,16 +16,9 @@
 <div id="container">
   <div class="box">
     <div style:display="flex">
-      <audio
-        controls
-        src={transformColumn
-          ? `/cache/${transformColumn}/${entry[transformColumn]}`
-          : `${dataOrigin}${entry[idColumn]}`}
-      >
+      <audio controls src={`${dataOrigin}${entry[idColumn]}`}>
         <source
-          src={transformColumn
-            ? `/cache/${transformColumn}/${entry[transformColumn]}`
-            : `${dataOrigin}${entry[idColumn]}`}
+          src={`${dataOrigin}${entry[idColumn]}`}
           type={"audio/" + entry[idColumn].split(".").at(-1)}
         />
       </audio>

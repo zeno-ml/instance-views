@@ -13,8 +13,6 @@
   // Key for the input data.
   export let dataColumn;
   export let dataOrigin;
-  // Key for the transformed data (current transform).
-  export let transformColumn;
   // Key for unique identifier of each item.
   export let idColumn;
 
