@@ -6095,7 +6095,7 @@ function create_fragment(ctx) {
 		},
 		m(target, anchor) {
 			insert_hydration(target, div_1, anchor);
-			/*div_1_binding*/ ctx[8](div_1);
+			/*div_1_binding*/ ctx[7](div_1);
 			insert_hydration(target, t, anchor);
 			append_hydration(document.head, link);
 		},
@@ -6104,7 +6104,7 @@ function create_fragment(ctx) {
 		o: noop,
 		d(detaching) {
 			if (detaching) detach(div_1);
-			/*div_1_binding*/ ctx[8](null);
+			/*div_1_binding*/ ctx[7](null);
 			if (detaching) detach(t);
 			detach(link);
 		}
@@ -6117,7 +6117,6 @@ function instance($$self, $$props, $$invalidate) {
 	let { labelColumn } = $$props;
 	let { dataColumn } = $$props;
 	let { dataOrigin } = $$props;
-	let { transformColumn } = $$props;
 	let { idColumn } = $$props;
 	let div;
 
@@ -6180,8 +6179,7 @@ function instance($$self, $$props, $$invalidate) {
 		if ('labelColumn' in $$props) $$invalidate(3, labelColumn = $$props.labelColumn);
 		if ('dataColumn' in $$props) $$invalidate(4, dataColumn = $$props.dataColumn);
 		if ('dataOrigin' in $$props) $$invalidate(5, dataOrigin = $$props.dataOrigin);
-		if ('transformColumn' in $$props) $$invalidate(6, transformColumn = $$props.transformColumn);
-		if ('idColumn' in $$props) $$invalidate(7, idColumn = $$props.idColumn);
+		if ('idColumn' in $$props) $$invalidate(6, idColumn = $$props.idColumn);
 	};
 
 	return [
@@ -6191,7 +6189,6 @@ function instance($$self, $$props, $$invalidate) {
 		labelColumn,
 		dataColumn,
 		dataOrigin,
-		transformColumn,
 		idColumn,
 		div_1_binding
 	];
@@ -6207,8 +6204,7 @@ class InstanceView extends SvelteComponent {
 			labelColumn: 3,
 			dataColumn: 4,
 			dataOrigin: 5,
-			transformColumn: 6,
-			idColumn: 7
+			idColumn: 6
 		});
 	}
 }
@@ -6221,7 +6217,6 @@ function getInstance(
   labelColumn,
   dataColumn,
   dataOrigin,
-  transformColumn,
   idColumn
 ) {
   new InstanceView({
@@ -6233,7 +6228,6 @@ function getInstance(
       labelColumn: labelColumn,
       dataColumn: dataColumn,
       dataOrigin: dataOrigin,
-      transformColumn: transformColumn,
       idColumn: idColumn,
     },
     hydrate: true,

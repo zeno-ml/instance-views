@@ -517,7 +517,7 @@ function add_css(target) {
 	append_styles(target, "svelte-ohpquu", ".label.svelte-ohpquu{font-size:12px;color:rgba(0, 0, 0, 0.5);font-variant:small-caps}.value.svelte-ohpquu{font-size:12px}.box.svelte-ohpquu{padding:10px;border:0.5px solid rgb(224, 224, 224)}");
 }
 
-// (24:2) {#if modelColumn && entry[modelColumn] !== undefined}
+// (22:2) {#if modelColumn && entry[modelColumn] !== undefined}
 function create_if_block(ctx) {
 	let br;
 	let t0;
@@ -686,7 +686,6 @@ function instance($$self, $$props, $$invalidate) {
 	let { labelColumn } = $$props;
 	let { dataColumn } = $$props;
 	let { dataOrigin } = $$props;
-	let { transformColumn } = $$props;
 	let { idColumn } = $$props;
 
 	$$self.$$set = $$props => {
@@ -696,20 +695,10 @@ function instance($$self, $$props, $$invalidate) {
 		if ('labelColumn' in $$props) $$invalidate(2, labelColumn = $$props.labelColumn);
 		if ('dataColumn' in $$props) $$invalidate(3, dataColumn = $$props.dataColumn);
 		if ('dataOrigin' in $$props) $$invalidate(5, dataOrigin = $$props.dataOrigin);
-		if ('transformColumn' in $$props) $$invalidate(6, transformColumn = $$props.transformColumn);
-		if ('idColumn' in $$props) $$invalidate(7, idColumn = $$props.idColumn);
+		if ('idColumn' in $$props) $$invalidate(6, idColumn = $$props.idColumn);
 	};
 
-	return [
-		entry,
-		modelColumn,
-		labelColumn,
-		dataColumn,
-		options,
-		dataOrigin,
-		transformColumn,
-		idColumn
-	];
+	return [entry, modelColumn, labelColumn, dataColumn, options, dataOrigin, idColumn];
 }
 
 class InstanceView extends SvelteComponent {
@@ -729,8 +718,7 @@ class InstanceView extends SvelteComponent {
 				labelColumn: 2,
 				dataColumn: 3,
 				dataOrigin: 5,
-				transformColumn: 6,
-				idColumn: 7
+				idColumn: 6
 			},
 			add_css
 		);
@@ -745,7 +733,6 @@ function getInstance(
   labelColumn,
   dataColumn,
   dataOrigin,
-  transformColumn,
   idColumn
 ) {
   new InstanceView({
@@ -757,7 +744,6 @@ function getInstance(
       labelColumn: labelColumn,
       dataColumn: dataColumn,
       dataOrigin: dataOrigin,
-      transformColumn: transformColumn,
       idColumn: idColumn,
     },
     hydrate: true,

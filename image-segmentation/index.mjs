@@ -744,7 +744,7 @@ function add_css(target) {
 	append_styles(target, "svelte-6lmbo0", "#overlays.svelte-6lmbo0{position:relative}.overlay.svelte-6lmbo0{filter:invert(100%) opacity(40%);left:0px;position:absolute}.box.svelte-6lmbo0{padding:10px;border:0.5px solid rgb(224, 224, 224)}");
 }
 
-// (26:4) {#if viewOptions["mask"].includes("Label")}
+// (24:4) {#if viewOptions["mask"].includes("Label")}
 function create_if_block_1(ctx) {
 	let img;
 	let img_src_value;
@@ -784,7 +784,7 @@ function create_if_block_1(ctx) {
 	};
 }
 
-// (35:4) {#if entry[modelColumn] && viewOptions["mask"].includes("Model")}
+// (33:4) {#if entry[modelColumn] && viewOptions["mask"].includes("Model")}
 function create_if_block$2(ctx) {
 	let img;
 	let img_src_value;
@@ -936,7 +936,6 @@ function instance$4($$self, $$props, $$invalidate) {
 	let { labelColumn } = $$props;
 	let { dataColumn } = $$props;
 	let { dataOrigin } = $$props;
-	let { transformColumn } = $$props;
 	let { idColumn } = $$props;
 
 	$$self.$$set = $$props => {
@@ -946,20 +945,10 @@ function instance$4($$self, $$props, $$invalidate) {
 		if ('labelColumn' in $$props) $$invalidate(3, labelColumn = $$props.labelColumn);
 		if ('dataColumn' in $$props) $$invalidate(6, dataColumn = $$props.dataColumn);
 		if ('dataOrigin' in $$props) $$invalidate(4, dataOrigin = $$props.dataOrigin);
-		if ('transformColumn' in $$props) $$invalidate(7, transformColumn = $$props.transformColumn);
 		if ('idColumn' in $$props) $$invalidate(5, idColumn = $$props.idColumn);
 	};
 
-	return [
-		entry,
-		viewOptions,
-		modelColumn,
-		labelColumn,
-		dataOrigin,
-		idColumn,
-		dataColumn,
-		transformColumn
-	];
+	return [entry, viewOptions, modelColumn, labelColumn, dataOrigin, idColumn, dataColumn];
 }
 
 class InstanceView extends SvelteComponent {
@@ -979,7 +968,6 @@ class InstanceView extends SvelteComponent {
 				labelColumn: 3,
 				dataColumn: 6,
 				dataOrigin: 4,
-				transformColumn: 7,
 				idColumn: 5
 			},
 			add_css
@@ -3917,7 +3905,6 @@ function getInstance(
   labelColumn,
   dataColumn,
   dataOrigin,
-  transformColumn,
   idColumn
 ) {
   new InstanceView({
@@ -3929,7 +3916,6 @@ function getInstance(
       labelColumn: labelColumn,
       dataColumn: dataColumn,
       dataOrigin: dataOrigin,
-      transformColumn: transformColumn,
       idColumn: idColumn,
     },
     hydrate: true,
