@@ -12,8 +12,6 @@
   export let labelColumn;
   // Key for the input data.
   export let dataColumn;
-  // Path or URL from witch to fetch data.
-  export let dataOrigin;
   // Key for unique identifier of each item.
   export let idColumn;
 </script>

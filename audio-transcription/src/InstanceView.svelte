@@ -7,8 +7,6 @@
   export let labelColumn;
   // Key for the input data.
   export let dataColumn;
-  // Path to fetch data from.
-  export let dataOrigin;
   // Key for unique identifier of each item.
   export let idColumn;
 </script>
@@ -16,9 +14,9 @@
 <div id="container">
   <div class="box">
     <div style:display="flex">
-      <audio controls src={`${dataOrigin}${entry[idColumn]}`}>
+      <audio controls src={`${entry[dataColumn]}`}>
         <source
-          src={`${dataOrigin}${entry[idColumn]}`}
+          src={`${entry[dataColumn]}`}
           type={"audio/" + entry[idColumn].split(".").at(-1)}
         />
       </audio>

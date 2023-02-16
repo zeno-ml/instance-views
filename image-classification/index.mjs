@@ -533,7 +533,7 @@ function add_css(target) {
 	append_styles(target, "svelte-8lajst", ".label.svelte-8lajst{margin-right:5px;font-size:10px;color:rgba(0, 0, 0, 0.5);font-variant:small-caps}.text.svelte-8lajst{display:flex;flex-direction:row}.value.svelte-8lajst{font-size:10px}.box.svelte-8lajst{width:min-content;padding:5px;border:0.5px solid rgb(224, 224, 224)}");
 }
 
-// (22:2) {#if modelColumn && entry[modelColumn]}
+// (21:2) {#if modelColumn && entry[modelColumn]}
 function create_if_block(ctx) {
 	let div;
 	let span0;
@@ -650,7 +650,7 @@ function create_fragment(ctx) {
 			this.h();
 		},
 		h() {
-			if (!src_url_equal(img.src, img_src_value = "" + (/*dataOrigin*/ ctx[3] + /*entry*/ ctx[0][/*idColumn*/ ctx[4]]))) attr(img, "src", img_src_value);
+			if (!src_url_equal(img.src, img_src_value = /*entry*/ ctx[0][/*dataColumn*/ ctx[3]])) attr(img, "src", img_src_value);
 			attr(img, "alt", img_alt_value = "Image thumbnail for instance " + /*entry*/ ctx[0][/*idColumn*/ ctx[4]]);
 			set_style(img, "max-width", `200px`, false);
 			attr(span0, "class", "label svelte-8lajst");
@@ -675,7 +675,7 @@ function create_fragment(ctx) {
 			if (if_block) if_block.m(div1, null);
 		},
 		p(ctx, [dirty]) {
-			if (dirty & /*dataOrigin, entry, idColumn*/ 25 && !src_url_equal(img.src, img_src_value = "" + (/*dataOrigin*/ ctx[3] + /*entry*/ ctx[0][/*idColumn*/ ctx[4]]))) {
+			if (dirty & /*entry, dataColumn*/ 9 && !src_url_equal(img.src, img_src_value = /*entry*/ ctx[0][/*dataColumn*/ ctx[3]])) {
 				attr(img, "src", img_src_value);
 			}
 
@@ -713,7 +713,6 @@ function instance($$self, $$props, $$invalidate) {
 	let { modelColumn } = $$props;
 	let { labelColumn } = $$props;
 	let { dataColumn } = $$props;
-	let { dataOrigin } = $$props;
 	let { idColumn } = $$props;
 
 	$$self.$$set = $$props => {
@@ -721,12 +720,11 @@ function instance($$self, $$props, $$invalidate) {
 		if ('options' in $$props) $$invalidate(5, options = $$props.options);
 		if ('modelColumn' in $$props) $$invalidate(1, modelColumn = $$props.modelColumn);
 		if ('labelColumn' in $$props) $$invalidate(2, labelColumn = $$props.labelColumn);
-		if ('dataColumn' in $$props) $$invalidate(6, dataColumn = $$props.dataColumn);
-		if ('dataOrigin' in $$props) $$invalidate(3, dataOrigin = $$props.dataOrigin);
+		if ('dataColumn' in $$props) $$invalidate(3, dataColumn = $$props.dataColumn);
 		if ('idColumn' in $$props) $$invalidate(4, idColumn = $$props.idColumn);
 	};
 
-	return [entry, modelColumn, labelColumn, dataOrigin, idColumn, options, dataColumn];
+	return [entry, modelColumn, labelColumn, dataColumn, idColumn, options];
 }
 
 class InstanceView extends SvelteComponent {
@@ -744,8 +742,7 @@ class InstanceView extends SvelteComponent {
 				options: 5,
 				modelColumn: 1,
 				labelColumn: 2,
-				dataColumn: 6,
-				dataOrigin: 3,
+				dataColumn: 3,
 				idColumn: 4
 			},
 			add_css
@@ -760,7 +757,6 @@ function getInstance(
   modelColumn,
   labelColumn,
   dataColumn,
-  dataOrigin,
   idColumn
 ) {
   new InstanceView({
@@ -771,7 +767,6 @@ function getInstance(
       modelColumn: modelColumn,
       labelColumn: labelColumn,
       dataColumn: dataColumn,
-      dataOrigin: dataOrigin,
       idColumn: idColumn,
     },
     hydrate: true,

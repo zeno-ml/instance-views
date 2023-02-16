@@ -1,5 +1,6 @@
 {
   "name": "{{cookiecutter.project_name}}",
+  "author": "{{cookiecutter.author_name}} <{{cookiecutter.email}}>",
   "svelte": "src/index.js",
   "module": "./index.mjs",
   "scripts": {

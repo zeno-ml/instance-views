@@ -8,7 +8,6 @@
   export let labelColumn;
   // Key for the input data.
   export let dataColumn;
-  export let dataOrigin;
   // Key for unique identifier of each item.
   export let idColumn;
 </script>
@@ -16,7 +15,7 @@
 <div class="box">
   <div id="overlays">
     <img
-      src="{dataOrigin}{entry[idColumn]}"
+      src={entry[dataColumn]}
       style:width="150px"
       style:height="150px"
       alt="Image thumbnail for instance {entry[idColumn]}"

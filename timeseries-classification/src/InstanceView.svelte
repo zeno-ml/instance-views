@@ -12,7 +12,6 @@
   export let labelColumn;
   // Key for the input data.
   export let dataColumn;
-  export let dataOrigin;
   // Key for unique identifier of each item.
   export let idColumn;
 
@@ -31,7 +30,7 @@
   ];
 
   onMount(() => {
-    csv(dataOrigin + entry[dataColumn]).then((data) => {
+    csv(entry[dataColumn]).then((data) => {
       let dat = [];
       let series = [];
       [...Object.keys(data[0])].forEach((key, i) => {

@@ -533,7 +533,7 @@ function add_css(target) {
 	append_styles(target, "svelte-1qkvlix", ".label.svelte-1qkvlix{font-size:12px;color:rgba(0, 0, 0, 0.5);font-variant:small-caps}.value.svelte-1qkvlix{font-size:12px}.box.svelte-1qkvlix{padding:10px;border:0.5px solid rgb(224, 224, 224);max-width:400px}#container.svelte-1qkvlix{display:flex;flex-direction:row;flex-wrap:wrap}spectrogram canvas{z-index:0 !important}wave canvas{z-index:0 !important}wave{z-index:0 !important}");
 }
 
-// (29:4) {#if modelColumn && entry[modelColumn] !== undefined}
+// (27:4) {#if modelColumn && entry[modelColumn] !== undefined}
 function create_if_block(ctx) {
 	let br;
 	let t0;
@@ -657,10 +657,10 @@ function create_fragment(ctx) {
 			this.h();
 		},
 		h() {
-			if (!src_url_equal(source.src, source_src_value = `${/*dataOrigin*/ ctx[3]}${/*entry*/ ctx[0][/*idColumn*/ ctx[4]]}`)) attr(source, "src", source_src_value);
+			if (!src_url_equal(source.src, source_src_value = `${/*entry*/ ctx[0][/*dataColumn*/ ctx[3]]}`)) attr(source, "src", source_src_value);
 			attr(source, "type", source_type_value = "audio/" + /*entry*/ ctx[0][/*idColumn*/ ctx[4]].split(".").at(-1));
 			audio.controls = true;
-			if (!src_url_equal(audio.src, audio_src_value = `${/*dataOrigin*/ ctx[3]}${/*entry*/ ctx[0][/*idColumn*/ ctx[4]]}`)) attr(audio, "src", audio_src_value);
+			if (!src_url_equal(audio.src, audio_src_value = `${/*entry*/ ctx[0][/*dataColumn*/ ctx[3]]}`)) attr(audio, "src", audio_src_value);
 			set_style(div0, "display", `flex`, false);
 			attr(span0, "class", "label svelte-1qkvlix");
 			attr(span1, "class", "value svelte-1qkvlix");
@@ -683,7 +683,7 @@ function create_fragment(ctx) {
 			if (if_block) if_block.m(div1, null);
 		},
 		p(ctx, [dirty]) {
-			if (dirty & /*dataOrigin, entry, idColumn*/ 25 && !src_url_equal(source.src, source_src_value = `${/*dataOrigin*/ ctx[3]}${/*entry*/ ctx[0][/*idColumn*/ ctx[4]]}`)) {
+			if (dirty & /*entry, dataColumn*/ 9 && !src_url_equal(source.src, source_src_value = `${/*entry*/ ctx[0][/*dataColumn*/ ctx[3]]}`)) {
 				attr(source, "src", source_src_value);
 			}
 
@@ -691,7 +691,7 @@ function create_fragment(ctx) {
 				attr(source, "type", source_type_value);
 			}
 
-			if (dirty & /*dataOrigin, entry, idColumn*/ 25 && !src_url_equal(audio.src, audio_src_value = `${/*dataOrigin*/ ctx[3]}${/*entry*/ ctx[0][/*idColumn*/ ctx[4]]}`)) {
+			if (dirty & /*entry, dataColumn*/ 9 && !src_url_equal(audio.src, audio_src_value = `${/*entry*/ ctx[0][/*dataColumn*/ ctx[3]]}`)) {
 				attr(audio, "src", audio_src_value);
 			}
 
@@ -725,7 +725,6 @@ function instance($$self, $$props, $$invalidate) {
 	let { modelColumn } = $$props;
 	let { labelColumn } = $$props;
 	let { dataColumn } = $$props;
-	let { dataOrigin } = $$props;
 	let { idColumn } = $$props;
 
 	$$self.$$set = $$props => {
@@ -733,12 +732,11 @@ function instance($$self, $$props, $$invalidate) {
 		if ('options' in $$props) $$invalidate(5, options = $$props.options);
 		if ('modelColumn' in $$props) $$invalidate(1, modelColumn = $$props.modelColumn);
 		if ('labelColumn' in $$props) $$invalidate(2, labelColumn = $$props.labelColumn);
-		if ('dataColumn' in $$props) $$invalidate(6, dataColumn = $$props.dataColumn);
-		if ('dataOrigin' in $$props) $$invalidate(3, dataOrigin = $$props.dataOrigin);
+		if ('dataColumn' in $$props) $$invalidate(3, dataColumn = $$props.dataColumn);
 		if ('idColumn' in $$props) $$invalidate(4, idColumn = $$props.idColumn);
 	};
 
-	return [entry, modelColumn, labelColumn, dataOrigin, idColumn, options, dataColumn];
+	return [entry, modelColumn, labelColumn, dataColumn, idColumn, options];
 }
 
 class InstanceView extends SvelteComponent {
@@ -756,8 +754,7 @@ class InstanceView extends SvelteComponent {
 				options: 5,
 				modelColumn: 1,
 				labelColumn: 2,
-				dataColumn: 6,
-				dataOrigin: 3,
+				dataColumn: 3,
 				idColumn: 4
 			},
 			add_css
@@ -772,7 +769,6 @@ function getInstance(
   modelColumn,
   labelColumn,
   dataColumn,
-  dataOrigin,
   idColumn
 ) {
   new InstanceView({
@@ -783,7 +779,6 @@ function getInstance(
       modelColumn: modelColumn,
       labelColumn: labelColumn,
       dataColumn: dataColumn,
-      dataOrigin: dataOrigin,
       idColumn: idColumn,
     },
     hydrate: true,

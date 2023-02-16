@@ -8,7 +8,6 @@
   export let labelColumn;
   // Key for the input data.
   export let dataColumn;
-  export let dataOrigin;
   // Key for unique identifier of each item.
   export let idColumn;
 </script>

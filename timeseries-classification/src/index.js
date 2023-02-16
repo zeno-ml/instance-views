@@ -7,7 +7,6 @@ export function getInstance(
   modelColumn,
   labelColumn,
   dataColumn,
-  dataOrigin,
   idColumn
 ) {
   new InstanceView({
@@ -18,7 +17,6 @@ export function getInstance(
       modelColumn: modelColumn,
       labelColumn: labelColumn,
       dataColumn: dataColumn,
-      dataOrigin: dataOrigin,
       idColumn: idColumn,
     },
     hydrate: true,
