@@ -4,5 +4,6 @@
 	"image-segmentation": "image-segmentation/index.mjs",
 	"text-classification": "text-classification/index.mjs",
 	"timeseries-classification": "timeseries-classification/index.mjs",
-	"code-generation": "code-generation/index.mjs"
+	"code-generation": "code-generation/index.mjs",
+	"chatbot": "chatbot/index.mjs"
 }
