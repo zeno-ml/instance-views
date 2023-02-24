@@ -6095,7 +6095,7 @@ function create_fragment(ctx) {
 		},
 		m(target, anchor) {
 			insert_hydration(target, div_1, anchor);
-			/*div_1_binding*/ ctx[7](div_1);
+			/*div_1_binding*/ ctx[6](div_1);
 			insert_hydration(target, t, anchor);
 			append_hydration(document.head, link);
 		},
@@ -6104,7 +6104,7 @@ function create_fragment(ctx) {
 		o: noop,
 		d(detaching) {
 			if (detaching) detach(div_1);
-			/*div_1_binding*/ ctx[7](null);
+			/*div_1_binding*/ ctx[6](null);
 			if (detaching) detach(t);
 			detach(link);
 		}
@@ -6116,7 +6116,6 @@ function instance($$self, $$props, $$invalidate) {
 	let { modelColumn } = $$props;
 	let { labelColumn } = $$props;
 	let { dataColumn } = $$props;
-	let { dataOrigin } = $$props;
 	let { idColumn } = $$props;
 	let div;
 
@@ -6133,7 +6132,7 @@ function instance($$self, $$props, $$invalidate) {
 	];
 
 	onMount(() => {
-		csv(dataOrigin + entry[dataColumn]).then(data => {
+		csv(entry[dataColumn]).then(data => {
 			let dat = [];
 			let series = [];
 
@@ -6178,20 +6177,10 @@ function instance($$self, $$props, $$invalidate) {
 		if ('modelColumn' in $$props) $$invalidate(2, modelColumn = $$props.modelColumn);
 		if ('labelColumn' in $$props) $$invalidate(3, labelColumn = $$props.labelColumn);
 		if ('dataColumn' in $$props) $$invalidate(4, dataColumn = $$props.dataColumn);
-		if ('dataOrigin' in $$props) $$invalidate(5, dataOrigin = $$props.dataOrigin);
-		if ('idColumn' in $$props) $$invalidate(6, idColumn = $$props.idColumn);
+		if ('idColumn' in $$props) $$invalidate(5, idColumn = $$props.idColumn);
 	};
 
-	return [
-		div,
-		entry,
-		modelColumn,
-		labelColumn,
-		dataColumn,
-		dataOrigin,
-		idColumn,
-		div_1_binding
-	];
+	return [div, entry, modelColumn, labelColumn, dataColumn, idColumn, div_1_binding];
 }
 
 class InstanceView extends SvelteComponent {
@@ -6203,8 +6192,7 @@ class InstanceView extends SvelteComponent {
 			modelColumn: 2,
 			labelColumn: 3,
 			dataColumn: 4,
-			dataOrigin: 5,
-			idColumn: 6
+			idColumn: 5
 		});
 	}
 }
@@ -6216,7 +6204,6 @@ function getInstance(
   modelColumn,
   labelColumn,
   dataColumn,
-  dataOrigin,
   idColumn
 ) {
   new InstanceView({
@@ -6227,7 +6214,6 @@ function getInstance(
       modelColumn: modelColumn,
       labelColumn: labelColumn,
       dataColumn: dataColumn,
-      dataOrigin: dataOrigin,
       idColumn: idColumn,
     },
     hydrate: true,
