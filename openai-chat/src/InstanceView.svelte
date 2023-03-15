@@ -15,8 +15,6 @@
   export let dataColumn;
   // Key for unique identifier of each item.
   export let idColumn;
-
-  $: console.log(entry);
 </script>
 
 <div id="container">

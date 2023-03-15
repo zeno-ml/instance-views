@@ -46,5 +46,6 @@
     border-radius: 5px;
     margin: 0px;
     padding: 10px;
+    overflow-wrap: anywhere;
   }
 </style>
