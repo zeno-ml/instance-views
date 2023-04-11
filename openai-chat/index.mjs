@@ -861,8 +861,82 @@ function get_each_context(ctx, list, i) {
 	return child_ctx;
 }
 
-// (23:2) {#if entry[dataColumn]}
-function create_if_block_1(ctx) {
+// (21:2) {#if entry[dataColumn]}
+function create_if_block_2(ctx) {
+	let current_block_type_index;
+	let if_block;
+	let if_block_anchor;
+	let current;
+	const if_block_creators = [create_if_block_3, create_else_block];
+	const if_blocks = [];
+
+	function select_block_type(ctx, dirty) {
+		if (typeof /*entry*/ ctx[0][/*dataColumn*/ ctx[3]] === "string") return 0;
+		return 1;
+	}
+
+	current_block_type_index = select_block_type(ctx);
+	if_block = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx);
+
+	return {
+		c() {
+			if_block.c();
+			if_block_anchor = empty();
+		},
+		l(nodes) {
+			if_block.l(nodes);
+			if_block_anchor = empty();
+		},
+		m(target, anchor) {
+			if_blocks[current_block_type_index].m(target, anchor);
+			insert_hydration(target, if_block_anchor, anchor);
+			current = true;
+		},
+		p(ctx, dirty) {
+			let previous_block_index = current_block_type_index;
+			current_block_type_index = select_block_type(ctx);
+
+			if (current_block_type_index === previous_block_index) {
+				if_blocks[current_block_type_index].p(ctx, dirty);
+			} else {
+				group_outros();
+
+				transition_out(if_blocks[previous_block_index], 1, 1, () => {
+					if_blocks[previous_block_index] = null;
+				});
+
+				check_outros();
+				if_block = if_blocks[current_block_type_index];
+
+				if (!if_block) {
+					if_block = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx);
+					if_block.c();
+				} else {
+					if_block.p(ctx, dirty);
+				}
+
+				transition_in(if_block, 1);
+				if_block.m(if_block_anchor.parentNode, if_block_anchor);
+			}
+		},
+		i(local) {
+			if (current) return;
+			transition_in(if_block);
+			current = true;
+		},
+		o(local) {
+			transition_out(if_block);
+			current = false;
+		},
+		d(detaching) {
+			if_blocks[current_block_type_index].d(detaching);
+			if (detaching) detach(if_block_anchor);
+		}
+	};
+}
+
+// (24:4) {:else}
+function create_else_block(ctx) {
 	let each_1_anchor;
 	let current;
 	let each_value = /*entry*/ ctx[0][/*dataColumn*/ ctx[3]];
@@ -952,8 +1026,50 @@ function create_if_block_1(ctx) {
 	};
 }
 
-// (29:40) 
-function create_if_block_4(ctx) {
+// (22:4) {#if typeof entry[dataColumn] === "string"}
+function create_if_block_3(ctx) {
+	let userblock;
+	let current;
+
+	userblock = new UserBlock({
+			props: {
+				input: /*entry*/ ctx[0][/*dataColumn*/ ctx[3]]
+			}
+		});
+
+	return {
+		c() {
+			create_component(userblock.$$.fragment);
+		},
+		l(nodes) {
+			claim_component(userblock.$$.fragment, nodes);
+		},
+		m(target, anchor) {
+			mount_component(userblock, target, anchor);
+			current = true;
+		},
+		p(ctx, dirty) {
+			const userblock_changes = {};
+			if (dirty & /*entry, dataColumn*/ 9) userblock_changes.input = /*entry*/ ctx[0][/*dataColumn*/ ctx[3]];
+			userblock.$set(userblock_changes);
+		},
+		i(local) {
+			if (current) return;
+			transition_in(userblock.$$.fragment, local);
+			current = true;
+		},
+		o(local) {
+			transition_out(userblock.$$.fragment, local);
+			current = false;
+		},
+		d(detaching) {
+			destroy_component(userblock, detaching);
+		}
+	};
+}
+
+// (30:42) 
+function create_if_block_6(ctx) {
 	let userblock;
 	let current;
 
@@ -992,8 +1108,8 @@ function create_if_block_4(ctx) {
 	};
 }
 
-// (27:45) 
-function create_if_block_3(ctx) {
+// (28:47) 
+function create_if_block_5(ctx) {
 	let assistantblock;
 	let current;
 
@@ -1032,8 +1148,8 @@ function create_if_block_3(ctx) {
 	};
 }
 
-// (25:6) {#if item["role"] === "system"}
-function create_if_block_2(ctx) {
+// (26:8) {#if item["role"] === "system"}
+function create_if_block_4(ctx) {
 	let systemblock;
 	let current;
 
@@ -1072,23 +1188,23 @@ function create_if_block_2(ctx) {
 	};
 }
 
-// (24:4) {#each entry[dataColumn] as item}
+// (25:6) {#each entry[dataColumn] as item}
 function create_each_block(ctx) {
 	let current_block_type_index;
 	let if_block;
 	let if_block_anchor;
 	let current;
-	const if_block_creators = [create_if_block_2, create_if_block_3, create_if_block_4];
+	const if_block_creators = [create_if_block_4, create_if_block_5, create_if_block_6];
 	const if_blocks = [];
 
-	function select_block_type(ctx, dirty) {
+	function select_block_type_1(ctx, dirty) {
 		if (/*item*/ ctx[6]["role"] === "system") return 0;
 		if (/*item*/ ctx[6]["role"] === "assistant") return 1;
 		if (/*item*/ ctx[6]["role"] === "user") return 2;
 		return -1;
 	}
 
-	if (~(current_block_type_index = select_block_type(ctx))) {
+	if (~(current_block_type_index = select_block_type_1(ctx))) {
 		if_block = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx);
 	}
 
@@ -1111,7 +1227,7 @@ function create_each_block(ctx) {
 		},
 		p(ctx, dirty) {
 			let previous_block_index = current_block_type_index;
-			current_block_type_index = select_block_type(ctx);
+			current_block_type_index = select_block_type_1(ctx);
 
 			if (current_block_type_index === previous_block_index) {
 				if (~current_block_type_index) {
@@ -1164,8 +1280,8 @@ function create_each_block(ctx) {
 	};
 }
 
-// (34:2) {#if entry[modelColumn]}
-function create_if_block(ctx) {
+// (36:2) {#if entry[modelColumn]}
+function create_if_block_1(ctx) {
 	let assistantblock;
 	let current;
 
@@ -1207,19 +1323,64 @@ function create_if_block(ctx) {
 	};
 }
 
+// (39:2) {#if entry[labelColumn]}
+function create_if_block(ctx) {
+	let p;
+	let span;
+	let t0;
+	let t1;
+	let t2_value = /*entry*/ ctx[0][/*labelColumn*/ ctx[2]] + "";
+	let t2;
+
+	return {
+		c() {
+			p = element("p");
+			span = element("span");
+			t0 = text("expected:");
+			t1 = space();
+			t2 = text(t2_value);
+			this.h();
+		},
+		l(nodes) {
+			p = claim_element(nodes, "P", { class: true });
+			var p_nodes = children(p);
+			span = claim_element(p_nodes, "SPAN", { class: true });
+			var span_nodes = children(span);
+			t0 = claim_text(span_nodes, "expected:");
+			span_nodes.forEach(detach);
+			t1 = claim_space(p_nodes);
+			t2 = claim_text(p_nodes, t2_value);
+			p_nodes.forEach(detach);
+			this.h();
+		},
+		h() {
+			attr(span, "class", "label svelte-tl9nqj");
+			attr(p, "class", "svelte-tl9nqj");
+		},
+		m(target, anchor) {
+			insert_hydration(target, p, anchor);
+			append_hydration(p, span);
+			append_hydration(span, t0);
+			append_hydration(p, t1);
+			append_hydration(p, t2);
+		},
+		p(ctx, dirty) {
+			if (dirty & /*entry, labelColumn*/ 5 && t2_value !== (t2_value = /*entry*/ ctx[0][/*labelColumn*/ ctx[2]] + "")) set_data(t2, t2_value);
+		},
+		d(detaching) {
+			if (detaching) detach(p);
+		}
+	};
+}
+
 function create_fragment(ctx) {
 	let div;
 	let t0;
 	let t1;
-	let p;
-	let span;
-	let t2;
-	let t3;
-	let t4_value = /*entry*/ ctx[0][/*labelColumn*/ ctx[2]] + "";
-	let t4;
 	let current;
-	let if_block0 = /*entry*/ ctx[0][/*dataColumn*/ ctx[3]] && create_if_block_1(ctx);
-	let if_block1 = /*entry*/ ctx[0][/*modelColumn*/ ctx[1]] && create_if_block(ctx);
+	let if_block0 = /*entry*/ ctx[0][/*dataColumn*/ ctx[3]] && create_if_block_2(ctx);
+	let if_block1 = /*entry*/ ctx[0][/*modelColumn*/ ctx[1]] && create_if_block_1(ctx);
+	let if_block2 = /*entry*/ ctx[0][/*labelColumn*/ ctx[2]] && create_if_block(ctx);
 
 	return {
 		c() {
@@ -1228,11 +1389,7 @@ function create_fragment(ctx) {
 			t0 = space();
 			if (if_block1) if_block1.c();
 			t1 = space();
-			p = element("p");
-			span = element("span");
-			t2 = text("ideal:");
-			t3 = space();
-			t4 = text(t4_value);
+			if (if_block2) if_block2.c();
 			this.h();
 		},
 		l(nodes) {
@@ -1242,21 +1399,11 @@ function create_fragment(ctx) {
 			t0 = claim_space(div_nodes);
 			if (if_block1) if_block1.l(div_nodes);
 			t1 = claim_space(div_nodes);
-			p = claim_element(div_nodes, "P", { class: true });
-			var p_nodes = children(p);
-			span = claim_element(p_nodes, "SPAN", { class: true });
-			var span_nodes = children(span);
-			t2 = claim_text(span_nodes, "ideal:");
-			span_nodes.forEach(detach);
-			t3 = claim_space(p_nodes);
-			t4 = claim_text(p_nodes, t4_value);
-			p_nodes.forEach(detach);
+			if (if_block2) if_block2.l(div_nodes);
 			div_nodes.forEach(detach);
 			this.h();
 		},
 		h() {
-			attr(span, "class", "label svelte-tl9nqj");
-			attr(p, "class", "svelte-tl9nqj");
 			attr(div, "id", "container");
 			attr(div, "class", "svelte-tl9nqj");
 		},
@@ -1266,11 +1413,7 @@ function create_fragment(ctx) {
 			append_hydration(div, t0);
 			if (if_block1) if_block1.m(div, null);
 			append_hydration(div, t1);
-			append_hydration(div, p);
-			append_hydration(p, span);
-			append_hydration(span, t2);
-			append_hydration(p, t3);
-			append_hydration(p, t4);
+			if (if_block2) if_block2.m(div, null);
 			current = true;
 		},
 		p(ctx, [dirty]) {
@@ -1282,7 +1425,7 @@ function create_fragment(ctx) {
 						transition_in(if_block0, 1);
 					}
 				} else {
-					if_block0 = create_if_block_1(ctx);
+					if_block0 = create_if_block_2(ctx);
 					if_block0.c();
 					transition_in(if_block0, 1);
 					if_block0.m(div, t0);
@@ -1305,7 +1448,7 @@ function create_fragment(ctx) {
 						transition_in(if_block1, 1);
 					}
 				} else {
-					if_block1 = create_if_block(ctx);
+					if_block1 = create_if_block_1(ctx);
 					if_block1.c();
 					transition_in(if_block1, 1);
 					if_block1.m(div, t1);
@@ -1320,7 +1463,18 @@ function create_fragment(ctx) {
 				check_outros();
 			}
 
-			if ((!current || dirty & /*entry, labelColumn*/ 5) && t4_value !== (t4_value = /*entry*/ ctx[0][/*labelColumn*/ ctx[2]] + "")) set_data(t4, t4_value);
+			if (/*entry*/ ctx[0][/*labelColumn*/ ctx[2]]) {
+				if (if_block2) {
+					if_block2.p(ctx, dirty);
+				} else {
+					if_block2 = create_if_block(ctx);
+					if_block2.c();
+					if_block2.m(div, null);
+				}
+			} else if (if_block2) {
+				if_block2.d(1);
+				if_block2 = null;
+			}
 		},
 		i(local) {
 			if (current) return;
@@ -1337,6 +1491,7 @@ function create_fragment(ctx) {
 			if (detaching) detach(div);
 			if (if_block0) if_block0.d();
 			if (if_block1) if_block1.d();
+			if (if_block2) if_block2.d();
 		}
 	};
 }
@@ -1348,7 +1503,6 @@ function instance($$self, $$props, $$invalidate) {
 	let { labelColumn } = $$props;
 	let { dataColumn } = $$props;
 	let { idColumn } = $$props;
-	console.log(entry[dataColumn]);
 
 	$$self.$$set = $$props => {
 		if ('options' in $$props) $$invalidate(4, options = $$props.options);

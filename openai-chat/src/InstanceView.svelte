@@ -19,20 +19,26 @@
 
 <div id="container">
   {#if entry[dataColumn]}
-    {#each entry[dataColumn] as item}
-      {#if item["role"] === "system"}
-        <SystemBlock input={item["content"]} />
-      {:else if item["role"] === "assistant"}
-        <AssistantBlock input={item["content"]} />
-      {:else if item["role"] === "user"}
-        <UserBlock input={item["content"]} />
-      {/if}
-    {/each}
+    {#if typeof entry[dataColumn] === "string"}
+      <UserBlock input={entry[dataColumn]} />
+    {:else}
+      {#each entry[dataColumn] as item}
+        {#if item["role"] === "system"}
+          <SystemBlock input={item["content"]} />
+        {:else if item["role"] === "assistant"}
+          <AssistantBlock input={item["content"]} />
+        {:else if item["role"] === "user"}
+          <UserBlock input={item["content"]} />
+        {/if}
+      {/each}
+    {/if}
   {/if}
   {#if entry[modelColumn]}
     <AssistantBlock input={entry[modelColumn]} output={true} />
   {/if}
-  <p><span class="label">expected:</span> {entry[labelColumn]}</p>
+  {#if entry[labelColumn]}
+    <p><span class="label">expected:</span> {entry[labelColumn]}</p>
+  {/if}
 </div>
 
 <style>
