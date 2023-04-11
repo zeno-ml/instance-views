@@ -32,7 +32,7 @@
   {#if entry[modelColumn]}
     <AssistantBlock input={entry[modelColumn]} output={true} />
   {/if}
-  <p><span class="label">ideal:</span> {entry[labelColumn]}</p>
+  <p><span class="label">expected:</span> {entry[labelColumn]}</p>
 </div>
 
 <style>

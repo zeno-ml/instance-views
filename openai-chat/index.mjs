@@ -861,7 +861,7 @@ function get_each_context(ctx, list, i) {
 	return child_ctx;
 }
 
-// (21:2) {#if entry[dataColumn]}
+// (23:2) {#if entry[dataColumn]}
 function create_if_block_1(ctx) {
 	let each_1_anchor;
 	let current;
@@ -952,7 +952,7 @@ function create_if_block_1(ctx) {
 	};
 }
 
-// (27:40) 
+// (29:40) 
 function create_if_block_4(ctx) {
 	let userblock;
 	let current;
@@ -992,7 +992,7 @@ function create_if_block_4(ctx) {
 	};
 }
 
-// (25:45) 
+// (27:45) 
 function create_if_block_3(ctx) {
 	let assistantblock;
 	let current;
@@ -1032,7 +1032,7 @@ function create_if_block_3(ctx) {
 	};
 }
 
-// (23:6) {#if item["role"] === "system"}
+// (25:6) {#if item["role"] === "system"}
 function create_if_block_2(ctx) {
 	let systemblock;
 	let current;
@@ -1072,7 +1072,7 @@ function create_if_block_2(ctx) {
 	};
 }
 
-// (22:4) {#each entry[dataColumn] as item}
+// (24:4) {#each entry[dataColumn] as item}
 function create_each_block(ctx) {
 	let current_block_type_index;
 	let if_block;
@@ -1164,7 +1164,7 @@ function create_each_block(ctx) {
 	};
 }
 
-// (32:2) {#if entry[modelColumn]}
+// (34:2) {#if entry[modelColumn]}
 function create_if_block(ctx) {
 	let assistantblock;
 	let current;
@@ -1348,6 +1348,7 @@ function instance($$self, $$props, $$invalidate) {
 	let { labelColumn } = $$props;
 	let { dataColumn } = $$props;
 	let { idColumn } = $$props;
+	console.log(entry[dataColumn]);
 
 	$$self.$$set = $$props => {
 		if ('options' in $$props) $$invalidate(4, options = $$props.options);
