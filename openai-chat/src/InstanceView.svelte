@@ -37,13 +37,14 @@
     <AssistantBlock input={entry[modelColumn]} output={true} />
   {/if}
   {#if entry[labelColumn]}
-    <p><span class="label">expected:</span> {entry[labelColumn]}</p>
+    <p><span class="label">Expected:</span> {entry[labelColumn]}</p>
   {/if}
 </div>
 
 <style>
   #container {
     border: 0.5px solid rgb(224, 224, 224);
+    min-width: 350px;
     border-radius: 2px;
     padding: 10px;
   }
