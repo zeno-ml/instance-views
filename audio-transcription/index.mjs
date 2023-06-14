@@ -658,7 +658,7 @@ function create_fragment(ctx) {
 		},
 		h() {
 			if (!src_url_equal(source.src, source_src_value = `${/*entry*/ ctx[0][/*dataColumn*/ ctx[3]]}`)) attr(source, "src", source_src_value);
-			attr(source, "type", source_type_value = "audio/" + /*entry*/ ctx[0][/*idColumn*/ ctx[4]].split(".").at(-1));
+			attr(source, "type", source_type_value = "audio/" + /*entry*/ ctx[0][/*dataColumn*/ ctx[3]].split(".").at(-1));
 			audio.controls = true;
 			if (!src_url_equal(audio.src, audio_src_value = `${/*entry*/ ctx[0][/*dataColumn*/ ctx[3]]}`)) attr(audio, "src", audio_src_value);
 			set_style(div0, "display", `flex`, false);
@@ -687,7 +687,7 @@ function create_fragment(ctx) {
 				attr(source, "src", source_src_value);
 			}
 
-			if (dirty & /*entry, idColumn*/ 17 && source_type_value !== (source_type_value = "audio/" + /*entry*/ ctx[0][/*idColumn*/ ctx[4]].split(".").at(-1))) {
+			if (dirty & /*entry, dataColumn*/ 9 && source_type_value !== (source_type_value = "audio/" + /*entry*/ ctx[0][/*dataColumn*/ ctx[3]].split(".").at(-1))) {
 				attr(source, "type", source_type_value);
 			}
 
@@ -729,14 +729,14 @@ function instance($$self, $$props, $$invalidate) {
 
 	$$self.$$set = $$props => {
 		if ('entry' in $$props) $$invalidate(0, entry = $$props.entry);
-		if ('options' in $$props) $$invalidate(5, options = $$props.options);
+		if ('options' in $$props) $$invalidate(4, options = $$props.options);
 		if ('modelColumn' in $$props) $$invalidate(1, modelColumn = $$props.modelColumn);
 		if ('labelColumn' in $$props) $$invalidate(2, labelColumn = $$props.labelColumn);
 		if ('dataColumn' in $$props) $$invalidate(3, dataColumn = $$props.dataColumn);
-		if ('idColumn' in $$props) $$invalidate(4, idColumn = $$props.idColumn);
+		if ('idColumn' in $$props) $$invalidate(5, idColumn = $$props.idColumn);
 	};
 
-	return [entry, modelColumn, labelColumn, dataColumn, idColumn, options];
+	return [entry, modelColumn, labelColumn, dataColumn, options, idColumn];
 }
 
 class InstanceView extends SvelteComponent {
@@ -751,11 +751,11 @@ class InstanceView extends SvelteComponent {
 			safe_not_equal,
 			{
 				entry: 0,
-				options: 5,
+				options: 4,
 				modelColumn: 1,
 				labelColumn: 2,
 				dataColumn: 3,
-				idColumn: 4
+				idColumn: 5
 			},
 			add_css
 		);

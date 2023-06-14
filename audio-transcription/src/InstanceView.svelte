@@ -17,7 +17,7 @@
       <audio controls src={`${entry[dataColumn]}`}>
         <source
           src={`${entry[dataColumn]}`}
-          type={"audio/" + entry[idColumn].split(".").at(-1)}
+          type={"audio/" + entry[dataColumn].split(".").at(-1)}
         />
       </audio>
     </div>
