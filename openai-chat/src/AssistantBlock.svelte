@@ -14,7 +14,9 @@
     />
   </svg>
 
-  <p class="chat {output ? 'model-border' : 'no-model-border'}">{input}</p>
+  <p class="chat message {output ? 'model-border' : 'no-model-border'}">
+    {input}
+  </p>
 </div>
 
 <style>
@@ -31,14 +33,16 @@
     border: 1px solid rgba(224, 224, 224, 1);
   }
   .box {
-    margin-top: 10px;
-    margin-bottom: 10px;
+    margin-top: 5px;
+    margin-bottom: 5px;
     display: flex;
-    align-items: start;
+    align-items: end;
+    position: relative;
+    z-index: 1;
   }
   .box svg {
-    min-width: 24px;
-    width: 24px;
+    min-width: 20px;
+    width: 20px;
     margin-right: 10px;
     margin-top: 7px;
   }
@@ -47,5 +51,37 @@
     margin: 0px;
     padding: 10px;
     overflow-wrap: anywhere;
+    max-width: 70%;
+  }
+  .message {
+    position: relative; /* Setup a relative container for our psuedo elements */
+    word-wrap: break-word; /* Make sure the text wraps to multiple lines if long */
+    align-self: flex-start;
+    background-color: white;
+  }
+  .message::before {
+    width: 20px;
+    left: -7px;
+    background-color: rgba(224, 224, 224, 1);
+    border-bottom-right-radius: 16px 14px;
+    position: absolute;
+    bottom: 0;
+    height: 25px; /* height of our bubble "tail" - should match the border-radius above */
+    content: "";
+    z-index: -1;
+  }
+  .message::after {
+    width: 10px;
+    background-color: white; /* All tails have the same bg cutout */
+    left: -11px;
+    border-bottom-right-radius: 10px;
+    position: absolute;
+    bottom: 0;
+    height: 25px; /* height of our bubble "tail" - should match the border-radius above */
+    content: "";
+    z-index: -1;
+  }
+  .model-border::before {
+    background-color: var(--logo);
   }
 </style>
