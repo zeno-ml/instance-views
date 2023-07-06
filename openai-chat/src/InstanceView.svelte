@@ -59,7 +59,10 @@
     <AssistantBlock input={entry[modelColumn]} output={true} />
   {/if}
   {#if entry[labelColumn]}
-    <p><span class="label">Expected:</span> {entry[labelColumn]}</p>
+    <div class="expected">
+      <span class="label">Expected:</span>
+      <span>{entry[labelColumn]}</span>
+    </div>
   {/if}
 </div>
 
@@ -67,18 +70,15 @@
   #container {
     display: flex;
     flex-direction: column;
-    border: 0.5px solid rgb(224, 224, 224);
+    border: 1px solid rgb(224, 224, 224);
     min-width: 350px;
+    max-width: 550px;
     border-radius: 2px;
     padding: 10px;
+    margin: 2.5px;
   }
   .label {
-    margin-right: 5px;
-    font-weight: 700;
-  }
-  p {
-    margin: 5px;
-    overflow-wrap: anywhere;
+    font-weight: 500;
   }
   .show-all {
     align-self: center;
@@ -88,6 +88,7 @@
     display: flex;
     align-items: center;
     padding: 5px;
+    margin-top: -7px;
     border-radius: 20px;
   }
   .hover {
@@ -100,5 +101,17 @@
     min-width: 24px;
     width: 24px;
     fill: var(--G3);
+  }
+  .expected {
+    overflow-wrap: break-word;
+    display: flex;
+    flex-direction: column;
+    margin-left: -10px;
+    margin-bottom: -10px;
+    margin-right: -10px;
+    padding: 5px;
+    font-size: small;
+    margin-top: 10px;
+    border-top: 0.5px solid rgb(224, 224, 224);
   }
 </style>
