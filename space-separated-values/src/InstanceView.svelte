@@ -39,7 +39,7 @@
       {/each}
       {#each modelEntries as entry (entry)}
         <tr>
-          <th>Model: </th>
+          <th>Output: </th>
           {#each entry as cell (cell)}
             <td>{cell}</td>
           {/each}
