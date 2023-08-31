@@ -7,5 +7,6 @@
 	"code-generation": "code-generation/index.mjs",
 	"chatbot": "chatbot/index.mjs",
 	"openai-chat": "openai-chat/index.mjs",
+	"openai-chat-markdown": "openai-chat-markdown/index.mjs",
 	"space-separated-values": "space-separated-values/index.mjs"
 }
