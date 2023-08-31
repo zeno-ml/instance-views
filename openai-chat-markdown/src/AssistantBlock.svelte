@@ -19,9 +19,9 @@
     />
   </svg>
 
-  <p class="chat message {output ? 'model-border' : 'no-model-border'}">
+  <div class="chat message {output ? 'model-border' : 'no-model-border'}">
     {@html renderedInput}
-  </p>
+  </div>
 </div>
 
 <style>

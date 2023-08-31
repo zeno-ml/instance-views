@@ -1,4 +1,6 @@
 <script lang="ts">
+  import purify from "DOMpurify";
+  import { parse } from "marked";
   import AssistantBlock from "./AssistantBlock.svelte";
   import SystemBlock from "./SystemBlock.svelte";
   import UserBlock from "./UserBlock.svelte";
@@ -20,6 +22,11 @@
   let hovered = false;
 
   $: entries = showall ? entry[dataColumn] : entry[dataColumn].slice(-4);
+
+  let renderedLabel = "";
+  $: if (entry[labelColumn]) {
+    renderedLabel = purify.sanitize(parse(entry[labelColumn]));
+  }
 </script>
 
 <div id="container">
@@ -61,7 +68,8 @@
   {#if entry[labelColumn]}
     <div class="expected">
       <span class="label">Expected:</span>
-      <span>{entry[labelColumn]}</span>
+      <br />
+      <span>{@html renderedLabel}</span>
     </div>
   {/if}
 </div>
@@ -78,7 +86,7 @@
     margin: 2.5px;
   }
   .label {
-    font-weight: 500;
+    font-weight: 700;
   }
   .show-all {
     align-self: center;
