@@ -67,8 +67,6 @@
   {/if}
   {#if entry[labelColumn]}
     <div class="expected">
-      <span class="label">Expected:</span>
-      <br />
       <span>{@html renderedLabel}</span>
     </div>
   {/if}
