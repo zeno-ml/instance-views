@@ -5062,80 +5062,76 @@ function add_css$1(target) {
 }
 
 function create_fragment$1(ctx) {
-	let div;
-	let p;
-	let t0;
-	let t1;
+	let div1;
+	let div0;
+	let t;
 	let svg;
 	let path;
 
 	return {
 		c() {
-			div = element("div");
-			p = element("p");
-			t0 = text$1(/*input*/ ctx[0]);
-			t1 = space();
+			div1 = element("div");
+			div0 = element("div");
+			t = space();
 			svg = svg_element("svg");
 			path = svg_element("path");
 			this.h();
 		},
 		l(nodes) {
-			div = claim_element(nodes, "DIV", { class: true });
-			var div_nodes = children(div);
-			p = claim_element(div_nodes, "P", { class: true });
-			var p_nodes = children(p);
-			t0 = claim_text(p_nodes, /*input*/ ctx[0]);
-			p_nodes.forEach(detach);
-			t1 = claim_space(div_nodes);
-			svg = claim_svg_element(div_nodes, "svg", { xmlns: true, viewBox: true, class: true });
+			div1 = claim_element(nodes, "DIV", { class: true });
+			var div1_nodes = children(div1);
+			div0 = claim_element(div1_nodes, "DIV", { class: true });
+			var div0_nodes = children(div0);
+			div0_nodes.forEach(detach);
+			t = claim_space(div1_nodes);
+			svg = claim_svg_element(div1_nodes, "svg", { xmlns: true, viewBox: true, class: true });
 			var svg_nodes = children(svg);
 			path = claim_svg_element(svg_nodes, "path", { d: true });
 			children(path).forEach(detach);
 			svg_nodes.forEach(detach);
-			div_nodes.forEach(detach);
+			div1_nodes.forEach(detach);
 			this.h();
 		},
 		h() {
-			attr(p, "class", "chat message svelte-1a18bkt");
+			attr(div0, "class", "chat message svelte-1a18bkt");
 			attr(path, "d", "M224 256A128 128 0 1 0 224 0a128 128 0 1 0 0 256zm-45.7 48C79.8 304 0 383.8 0 482.3C0 498.7 13.3 512 29.7 512H418.3c16.4 0 29.7-13.3 29.7-29.7C448 383.8 368.2 304 269.7 304H178.3z");
 			attr(svg, "xmlns", "http://www.w3.org/2000/svg");
 			attr(svg, "viewBox", "0 0 448 512");
 			attr(svg, "class", "svelte-1a18bkt");
-			attr(div, "class", "box svelte-1a18bkt");
+			attr(div1, "class", "box svelte-1a18bkt");
 		},
 		m(target, anchor) {
-			insert_hydration(target, div, anchor);
-			append_hydration(div, p);
-			append_hydration(p, t0);
-			append_hydration(div, t1);
-			append_hydration(div, svg);
+			insert_hydration(target, div1, anchor);
+			append_hydration(div1, div0);
+			div0.innerHTML = /*renderedInput*/ ctx[0];
+			append_hydration(div1, t);
+			append_hydration(div1, svg);
 			append_hydration(svg, path);
 		},
-		p(ctx, [dirty]) {
-			if (dirty & /*input*/ 1) set_data(t0, /*input*/ ctx[0]);
-		},
+		p: noop,
 		i: noop,
 		o: noop,
 		d(detaching) {
-			if (detaching) detach(div);
+			if (detaching) detach(div1);
 		}
 	};
 }
 
 function instance$1($$self, $$props, $$invalidate) {
 	let { input } = $$props;
+	let renderedInput = purify.sanitize(parse(input));
 
 	$$self.$$set = $$props => {
-		if ('input' in $$props) $$invalidate(0, input = $$props.input);
+		if ('input' in $$props) $$invalidate(1, input = $$props.input);
 	};
 
-	return [input];
+	return [renderedInput, input];
 }
 
 class UserBlock extends SvelteComponent {
 	constructor(options) {
 		super();
-		init(this, options, instance$1, create_fragment$1, safe_not_equal, { input: 0 }, add_css$1);
+		init(this, options, instance$1, create_fragment$1, safe_not_equal, { input: 1 }, add_css$1);
 	}
 }
 
