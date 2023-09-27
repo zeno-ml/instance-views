@@ -1,3 +1,5 @@
+# This repository has been deprecated and is no longer actively maintained. Instance views are now integrated into [ZenoHub](https://github.com/zeno-ml/zeno-hub).
+
 # Zeno Instance Views
 
 Modular data instance views for Zeno.
